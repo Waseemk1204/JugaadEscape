@@ -1,0 +1,15 @@
+{
+  "name": "escape-room",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Escape Room — a solo first-person horror run through an endless yellow maze. Split out of Killbook 2D's solo mode.",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node server.mjs",
+    "test": "node --test test/*.test.mjs",
+    "check": "for f in server.mjs shared/*.js src/*.js src/three/*.js test/*.mjs; do node --check \"$f\" || exit 1; done"
+  }
+}

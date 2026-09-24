@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+    <meta name="theme-color" content="#05070a" />
+    <meta name="description" content="Escape Room — find three fuse boxes in an endless yellow maze before the thing walking it finds you." />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <title>Escape Room</title>
+    <link rel="icon" href="./assets/icon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="./src/styles.css" />
+    <link rel="stylesheet" href="./src/title.css" />
+  </head>
+  <body>
+    <main id="app" class="app">
+      <canvas id="game-canvas" class="world-canvas" aria-label="Game view"></canvas>
+
+      <!-- TITLE -->
+      <section id="screen-title" class="screen title-screen">
+        <div class="title-card">
+          <p class="eyebrow">Solo horror</p>
+          <h1>Escape Room</h1>
+          <p class="muted">No players. No exit signs. Find three fuse boxes in an endless yellow maze
+            before the thing walking it finds you. Headphones on.</p>
+          <button id="title-start" class="primary-button">Enter</button>
+          <p id="title-best" class="muted small hidden"></p>
+          <p class="muted small title-keys">WASD move · Shift sprint · C crouch · Space jump · E use · F torch</p>
+        </div>
+      </section>
+
+      <!-- Shared touch controls (joystick and action buttons) -->
+      <div id="touch-controls" class="touch-controls hidden">
+        <div id="joystick" class="joystick" aria-label="Movement joystick">
+            <div class="joy-arrow up"></div>
+            <div class="joy-arrow right"></div>
+            <div class="joy-arrow down"></div>
+            <div class="joy-arrow left"></div>
+            <div id="joy-knob" class="joy-knob"></div>
+          </div>
+
+          <div class="action-stack">
+            <button id="killbook-button" class="action-button killbook hidden" aria-label="Killbook">
+              <span class="note-icon"></span>
+              <span>Killbook</span>
+            </button>
+            <button id="interact-button" class="action-button" aria-label="Interact">
+              <span class="hand-icon"></span>
+              <span id="interact-label">Interact</span>
+            </button>
+            <button id="run-button" class="action-button" aria-label="Toggle running" aria-pressed="false">
+              <span class="run-icon"></span>
+              <span>Run</span>
+            </button>
+            <button id="crouch-button" class="action-button small" aria-label="Toggle crouch" aria-pressed="false">
+              <span class="crouch-icon"></span>
+              <span>Crouch</span>
+            </button>
+            <button id="jump-button" class="action-button small" aria-label="Jump">
+              <span class="jump-icon"></span>
+              <span>Jump</span>
+            </button>
+          </div>
+      </div>
+
+
+      <!-- SOLO: ESCAPE ROOM -->
+      <section id="screen-solo" class="screen solo-screen hidden">
+        <div id="solo-vignette" class="solo-vignette" aria-hidden="true"></div>
+        <div id="solo-flash" class="solo-flash" aria-hidden="true"></div>
+        <div id="solo-face" class="solo-face" aria-hidden="true"></div>
+        <div id="solo-strobe" class="solo-strobe" aria-hidden="true"></div>
+        <div id="solo-blood" class="solo-blood" aria-hidden="true"></div>
+        <div id="solo-eyes" class="solo-eyes" aria-hidden="true"><i class="lid top"></i><i class="lid bottom"></i></div>
+        <div id="solo-fade" class="solo-fade" aria-hidden="true"></div>
+
+        <div id="solo-hud" class="solo-hud">
+          <div class="solo-top">
+            <div class="solo-stat">
+              <span class="solo-stat-label">Fuses</span>
+              <strong id="solo-fuses">0 / 3</strong>
+            </div>
+            <div class="solo-stat">
+              <span class="solo-stat-label">Lives</span>
+              <span id="solo-lives" class="solo-lives"></span>
+            </div>
+            <div class="solo-stat">
+              <span class="solo-stat-label">Time</span>
+              <strong id="solo-timer">00:00</strong>
+            </div>
+            <div id="solo-compass" class="solo-compass dead" aria-label="Compass">
+              <div class="solo-compass-dial"><div id="solo-arrow" class="solo-arrow"></div></div>
+              <span id="solo-compass-label">NO SIGNAL</span>
+            </div>
+            <div class="solo-top-actions">
+              <button id="solo-torch" class="icon-button active" title="Toggle torch" aria-label="Toggle torch" aria-pressed="true">
+                <span class="torch-icon"></span>
+              </button>
+              <button id="solo-leave" class="icon-button leave" title="Leave" aria-label="Leave the Lobby">
+                <span class="leave-icon"></span>
+              </button>
+            </div>
+          </div>
+
+          <div id="solo-stamina" class="solo-stamina"><div id="solo-stamina-fill" class="solo-stamina-fill"></div></div>
+          <span id="solo-seed" class="solo-seed">SEED</span>
+
+          <div id="solo-prompt" class="solo-prompt hidden">
+            <span id="solo-prompt-label">Pull the fuse</span>
+            <div class="hold-track"><div id="solo-hold-fill"></div></div>
+          </div>
+
+          <p id="solo-run-banner" class="solo-run-banner hidden">RUN TOWARDS THE EXIT DOOR</p>
+          <p id="solo-hint" class="solo-hint">Find three fuse boxes. Something else is in here with you.</p>
+          <div class="crosshair" aria-hidden="true"></div>
+        </div>
+
+        <div id="solo-end" class="overlay solo-end hidden">
+          <div class="overlay-card">
+            <p class="eyebrow">Escape Room</p>
+            <h2 id="solo-end-title">It found you</h2>
+            <p id="solo-end-body" class="muted"></p>
+            <ul id="solo-end-stats" class="solo-stats"></ul>
+            <div class="row">
+              <button id="solo-retry" class="primary-button">Run again</button>
+              <button id="solo-quit" class="secondary-button">Back to title</button>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script type="importmap">
+      { "imports": { "three": "./assets/vendor/three.module.min.js" } }
+    </script>
+    <script type="module" src="./src/main.js"></script>
+  </body>
+</html>

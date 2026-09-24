@@ -1,0 +1,3184 @@
+:root {
+  color-scheme: dark;
+  --ink: #f4f0e8;
+  --muted: #a9a7a4;
+  --panel: rgba(5, 6, 8, 0.74);
+  --panel-strong: rgba(5, 6, 8, 0.9);
+  --line: rgba(255, 255, 255, 0.14);
+  --accent: #c83431;
+  --gold: #c69a4b;
+  --green: #7fac83;
+  --blue: #6aa5c9;
+  --shadow: rgba(0, 0, 0, 0.65);
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html,
+body,
+.app {
+  width: 100%;
+  height: 100vh;
+  /* Dynamic viewport units keep the layout correct while mobile browser
+     chrome slides in and out, instead of leaving a dead band at the bottom. */
+  height: 100dvh;
+  margin: 0;
+  overflow: hidden;
+  overscroll-behavior: none;
+  background: #020304;
+  color: var(--ink);
+}
+
+button,
+input {
+  font: inherit;
+}
+
+button {
+  border: 0;
+  color: inherit;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.hidden {
+  display: none !important;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.small {
+  font-size: 13px;
+}
+
+.row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 16px;
+}
+
+.row > button {
+  flex: 1 1 140px;
+}
+
+/* ---------------------------------------------------------------- menus */
+
+.screen {
+  position: absolute;
+  inset: 0;
+}
+
+.menu-screen {
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  overflow: auto;
+  z-index: 1;
+  /* Kept light so the 3D school orbiting behind stays visible; the panels
+     carry their own solid backgrounds for readability. */
+  background:
+    radial-gradient(circle at 50% 50%, rgba(3, 5, 8, 0.1), rgba(3, 5, 8, 0.55) 78%),
+    linear-gradient(180deg, rgba(3, 5, 8, 0.35) 0%, rgba(3, 5, 8, 0.05) 45%, rgba(3, 5, 8, 0.45) 100%);
+}
+
+.world-canvas {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  touch-action: none;
+}
+
+.menu-panel {
+  width: min(94vw, 460px);
+  padding: 28px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: rgba(5, 6, 8, 0.8);
+  box-shadow: 0 24px 80px var(--shadow);
+  backdrop-filter: blur(12px);
+}
+
+.eyebrow,
+.tagline {
+  margin: 0;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 3px;
+  font-size: 12px;
+}
+
+.title {
+  margin: 4px 0 22px;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 56px;
+  font-weight: 500;
+  line-height: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.title-sub {
+  font-size: 16px;
+  letter-spacing: 6px;
+  text-transform: uppercase;
+  color: var(--accent);
+  text-shadow: 0 0 18px rgba(200, 52, 49, 0.6);
+  margin-top: 8px;
+}
+
+.menu-title {
+  margin: 6px 0 18px;
+  font-family: Georgia, "Times New Roman", serif;
+  font-weight: 500;
+  font-size: 28px;
+}
+
+.field-label {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+#display-name,
+#room-code,
+#chat-input {
+  width: 100%;
+  min-height: 48px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--ink);
+  outline: 0;
+  padding: 0 14px;
+  font-size: 17px;
+}
+
+#room-code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  letter-spacing: 8px;
+  text-transform: uppercase;
+  text-align: center;
+  font-size: 24px;
+}
+
+#display-name:focus,
+#room-code:focus,
+#chat-input:focus {
+  border-color: rgba(198, 154, 75, 0.75);
+}
+
+.primary-button,
+.secondary-button,
+.mode-button,
+.chat-form button,
+.start-button {
+  min-height: 48px;
+  border-radius: 6px;
+  padding: 0 16px;
+  transition: transform 120ms ease, border-color 120ms ease, background 120ms ease, opacity 120ms ease;
+}
+
+.primary-button,
+.chat-form button,
+.start-button {
+  background: linear-gradient(180deg, #b33835, #782321);
+  box-shadow: 0 8px 24px rgba(120, 35, 33, 0.35);
+  color: #fff;
+}
+
+.primary-button:disabled,
+.start-button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.secondary-button,
+.mode-button {
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.menu-panel .primary-button {
+  width: 100%;
+  margin-top: 16px;
+}
+
+.link-button {
+  display: block;
+  margin: 18px auto 0;
+  background: transparent;
+  color: var(--muted);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  min-height: 40px;
+}
+
+.status-line {
+  margin: 14px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+  text-align: center;
+}
+
+.status-line.error {
+  color: #e57f7c;
+}
+
+.choice-stack {
+  display: grid;
+  gap: 12px;
+}
+
+.choice-card {
+  display: grid;
+  gap: 6px;
+  text-align: left;
+  padding: 16px 18px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  transition: border-color 120ms ease, background 120ms ease, transform 120ms ease;
+}
+
+.choice-card strong {
+  font-family: Georgia, "Times New Roman", serif;
+  font-weight: 500;
+  font-size: 22px;
+}
+
+.choice-card span {
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.choice-card:hover,
+.choice-card:focus-visible {
+  border-color: rgba(198, 154, 75, 0.8);
+  background: rgba(198, 154, 75, 0.12);
+}
+
+.segmented {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  overflow: hidden;
+  margin-bottom: 18px;
+}
+
+.segment {
+  min-height: 44px;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--muted);
+}
+
+.segment.selected {
+  background: rgba(198, 154, 75, 0.2);
+  color: var(--ink);
+}
+
+.mode-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.mode-button {
+  display: grid;
+  gap: 2px;
+  min-height: 60px;
+}
+
+.mode-button small {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.mode-button.selected {
+  border-color: rgba(198, 154, 75, 0.9);
+  background: rgba(198, 154, 75, 0.2);
+}
+
+/* ---------------------------------------------------------------- game */
+
+/* The 3D view renders to the app-level canvas underneath, so the game screen
+   is a transparent HUD layer and pointer events fall through to the canvas
+   except where a control actually sits. */
+.game-screen {
+  z-index: 2;
+  isolation: isolate;
+  background: transparent;
+  touch-action: none;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.game-screen > *,
+.game-screen .overlay,
+.game-screen .overlay-panel {
+  pointer-events: auto;
+}
+
+.top-left,
+.top-right,
+.players-panel,
+.interaction-card,
+.chat-drawer,
+.toasts,
+.connection-banner,
+.writing-card {
+  position: absolute;
+  z-index: 3;
+}
+
+.top-left {
+  top: max(14px, var(--safe-top));
+  left: max(14px, var(--safe-left));
+  width: min(280px, 46vw);
+  display: grid;
+  gap: 10px;
+}
+
+.brand-line {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.brand-title {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 30px;
+  line-height: 1;
+  text-shadow: 0 3px 20px #000;
+}
+
+.pill {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 4px 10px;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--muted);
+  font-size: 12px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  letter-spacing: 1px;
+}
+
+.status-card {
+  padding: 10px 14px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  background: var(--panel);
+  backdrop-filter: blur(16px);
+}
+
+.status-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+  font-size: 16px;
+}
+
+.status-row #phase-label {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 19px;
+}
+
+.status-row #player-count {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.status-detail {
+  margin-top: 4px;
+  color: #dfdcd5;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+
+.status-detail.warn {
+  color: #f0c36a;
+}
+
+.status-detail.countdown {
+  font-size: 26px;
+  font-family: Georgia, "Times New Roman", serif;
+  color: #f4e1b7;
+}
+
+.status-extra {
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.start-button {
+  width: 100%;
+}
+
+.top-right {
+  top: max(14px, var(--safe-top));
+  right: max(14px, var(--safe-right));
+  display: flex;
+  gap: 10px;
+}
+
+.icon-button {
+  width: 50px;
+  height: 50px;
+  display: grid;
+  place-items: center;
+  border: 2px solid rgba(255, 255, 255, 0.18);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(10px);
+  position: relative;
+}
+
+.icon-button[aria-pressed="true"] {
+  border-color: rgba(127, 172, 131, 0.9);
+  background: rgba(127, 172, 131, 0.18);
+}
+
+.icon-button.speaking {
+  box-shadow: 0 0 0 4px rgba(127, 172, 131, 0.35), 0 10px 26px rgba(0, 0, 0, 0.4);
+}
+
+.icon-button.off .sound-icon,
+.icon-button.off .mic-icon {
+  opacity: 0.4;
+}
+
+.icon-button.off::after {
+  content: "";
+  position: absolute;
+  width: 30px;
+  height: 3px;
+  background: #e57f7c;
+  transform: rotate(-45deg);
+  border-radius: 2px;
+}
+
+.icon-button.leave {
+  border-color: rgba(200, 52, 49, 0.5);
+}
+
+.mic-icon,
+.sound-icon,
+.players-icon,
+.fullscreen-icon,
+.leave-icon,
+.chat-icon,
+.hand-icon,
+.run-icon,
+.note-icon {
+  width: 24px;
+  height: 24px;
+  display: block;
+  position: relative;
+}
+
+/* The mic and the headphones are drawn icons (inline SVG in the markup). */
+svg.mic-icon,
+svg.sound-icon {
+  width: 24px;
+  height: 24px;
+  color: #ddd;
+}
+
+.players-icon::before,
+.players-icon::after {
+  content: "";
+  position: absolute;
+  border-radius: 50% 50% 4px 4px;
+  background: #ddd;
+}
+
+.players-icon::before {
+  left: 2px;
+  top: 2px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  box-shadow: 11px 0 0 #ddd;
+}
+
+.players-icon::after {
+  left: 0;
+  bottom: 1px;
+  width: 24px;
+  height: 10px;
+}
+
+.fullscreen-icon {
+  width: 22px;
+  height: 20px;
+}
+
+.fullscreen-icon::before,
+.fullscreen-icon::after {
+  content: "";
+  position: absolute;
+  width: 8px;
+  height: 7px;
+  border: 3px solid #ddd;
+}
+
+.fullscreen-icon::before {
+  left: 0;
+  top: 0;
+  border-right: 0;
+  border-bottom: 0;
+}
+
+.fullscreen-icon::after {
+  right: 0;
+  bottom: 0;
+  border-left: 0;
+  border-top: 0;
+}
+
+.icon-button[aria-pressed="true"] .fullscreen-icon::before {
+  border-right: 3px solid #ddd;
+  border-bottom: 3px solid #ddd;
+  border-left: 0;
+  border-top: 0;
+}
+
+.leave-icon {
+  border: 3px solid #e57f7c;
+  border-right-color: transparent;
+  border-radius: 4px;
+  width: 18px;
+  left: 0;
+}
+
+.leave-icon::after {
+  content: "";
+  position: absolute;
+  right: -12px;
+  top: 5px;
+  width: 8px;
+  height: 8px;
+  border-top: 3px solid #e57f7c;
+  border-right: 3px solid #e57f7c;
+  transform: rotate(45deg);
+}
+
+.leave-icon::before {
+  content: "";
+  position: absolute;
+  right: -10px;
+  top: 8px;
+  width: 14px;
+  height: 3px;
+  background: #e57f7c;
+}
+
+/* The radar: round, turns with you, opens the full map on tap or M. */
+.minimap-wrap {
+  position: absolute;
+  z-index: 3;
+  top: max(74px, calc(var(--safe-top) + 62px));
+  right: max(14px, var(--safe-right));
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: rgba(5, 6, 8, 0.72);
+  backdrop-filter: blur(10px);
+  cursor: pointer;
+  pointer-events: auto;
+  color: inherit;
+  font: inherit;
+}
+
+.minimap-wrap:focus-visible {
+  outline: 2px solid #f0df9d;
+  outline-offset: 2px;
+}
+
+.minimap {
+  display: block;
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+}
+
+.minimap-key {
+  position: absolute;
+  right: 2px;
+  bottom: 2px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: 5px;
+  background: rgba(8, 9, 12, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 16px;
+  text-align: center;
+}
+
+.game-screen.meeting-mode .minimap-wrap,
+.game-screen.dead .minimap-wrap {
+  display: none;
+}
+
+/* The full plan of the school. */
+.map-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 8;
+  background: rgba(3, 4, 6, 0.9);
+  backdrop-filter: blur(4px);
+  cursor: pointer;
+}
+
+.map-overlay.hidden {
+  display: none;
+}
+
+.map-full {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.map-hint {
+  position: absolute;
+  left: 50%;
+  bottom: max(18px, var(--safe-bottom));
+  transform: translateX(-50%);
+  margin: 0;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 13px;
+}
+
+@media (max-width: 760px), (max-height: 520px) {
+  .minimap {
+    width: 108px;
+    height: 108px;
+  }
+
+  .minimap-key {
+    display: none;
+  }
+}
+
+@media (hover: none) {
+  .minimap-key {
+    display: none;
+  }
+}
+
+.players-panel {
+  top: max(198px, calc(var(--safe-top) + 186px));
+  right: max(14px, var(--safe-right));
+  width: min(260px, 70vw);
+  max-height: 55vh;
+  overflow: auto;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel-strong);
+  backdrop-filter: blur(16px);
+}
+
+.players-panel h3 {
+  margin: 0 0 8px;
+  font-weight: 500;
+  font-size: 16px;
+}
+
+.players-panel h3 span {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.players-panel ul,
+.tag-list,
+.meeting-players,
+.tally,
+.roles {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.players-panel li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 30px;
+  font-size: 14px;
+}
+
+.swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  flex: 0 0 12px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+}
+
+.player-name {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.badge {
+  font-size: 11px;
+  color: var(--muted);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 1px 7px;
+}
+
+.badge.host {
+  color: #f4e1b7;
+  border-color: rgba(198, 154, 75, 0.6);
+}
+
+.badge.dead {
+  color: #e57f7c;
+  border-color: rgba(200, 52, 49, 0.5);
+}
+
+.badge.you {
+  color: var(--blue);
+}
+
+.mic-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  flex: 0 0 9px;
+}
+
+.mic-dot.on {
+  background: var(--green);
+}
+
+.mic-dot.speaking {
+  box-shadow: 0 0 0 4px rgba(127, 172, 131, 0.35);
+}
+
+li.offline {
+  opacity: 0.5;
+}
+
+/* Controls */
+
+.joystick {
+  position: absolute;
+  z-index: 4;
+  left: max(26px, var(--safe-left));
+  bottom: max(30px, var(--safe-bottom));
+  width: 150px;
+  height: 150px;
+  border: 2px solid rgba(255, 255, 255, 0.18);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.05);
+  box-shadow: inset 0 0 32px rgba(255, 255, 255, 0.04), 0 20px 50px rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(10px);
+  touch-action: none;
+}
+
+.joy-knob {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(circle at 35% 28%, #d9d9d9, #9e9e9e 62%, #777);
+  box-shadow: inset 0 0 12px rgba(255, 255, 255, 0.22), 0 8px 18px rgba(0, 0, 0, 0.45);
+}
+
+.joy-arrow {
+  position: absolute;
+  width: 0;
+  height: 0;
+  opacity: 0.55;
+}
+
+.joy-arrow.up {
+  top: 12px;
+  left: 64px;
+  border-left: 10px solid transparent;
+  border-right: 10px solid transparent;
+  border-bottom: 12px solid #d5d5d5;
+}
+
+.joy-arrow.down {
+  bottom: 12px;
+  left: 64px;
+  border-left: 10px solid transparent;
+  border-right: 10px solid transparent;
+  border-top: 12px solid #d5d5d5;
+}
+
+.joy-arrow.left {
+  left: 14px;
+  top: 64px;
+  border-top: 10px solid transparent;
+  border-bottom: 10px solid transparent;
+  border-right: 12px solid #d5d5d5;
+}
+
+.joy-arrow.right {
+  right: 14px;
+  top: 64px;
+  border-top: 10px solid transparent;
+  border-bottom: 10px solid transparent;
+  border-left: 12px solid #d5d5d5;
+}
+
+/* Touch actions, laid out as an arc around where the right thumb actually
+   pivots — the bottom-right corner — rather than as a column.
+   
+   A vertical stack puts the least-used button nearest the thumb and the most-
+   used one a stretch away, and on a tall phone the top of the column collides
+   with the chat drawer and the HUD. Every shooter on a phone does the same
+   thing instead: the action you press constantly sits under the resting thumb,
+   and the rest fan out from it at increasing radius. Positions here are
+   absolute rather than a grid because an arc is not a line. */
+.action-stack {
+  position: absolute;
+  z-index: 4;
+  right: max(10px, var(--safe-right));
+  bottom: max(10px, var(--safe-bottom));
+  width: 250px;
+  height: 260px;
+  pointer-events: none;
+}
+
+.action-stack > * {
+  position: absolute;
+  pointer-events: auto;
+}
+
+/* Under the resting thumb. */
+#interact-button {
+  right: 6px;
+  bottom: 86px;
+}
+
+/* Inboard of it, within a short sweep. */
+#jump-button {
+  right: 104px;
+  bottom: 22px;
+}
+
+#crouch-button {
+  right: 122px;
+  bottom: 118px;
+}
+
+/* Above, where the thumb reaches by extending rather than sweeping. */
+#run-button {
+  right: 20px;
+  bottom: 196px;
+}
+
+/* Rare, deliberate, and destructive — furthest out, so it is never brushed. */
+.action-button.killbook {
+  right: 128px;
+  bottom: 212px;
+  width: 72px;
+  height: 72px;
+  border-color: rgba(200, 52, 49, 0.55);
+  background: rgba(60, 10, 10, 0.5);
+  font-size: 11px;
+}
+
+.action-button {
+  width: 96px;
+  height: 96px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 4px;
+  border: 3px solid rgba(255, 255, 255, 0.17);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  color: #e8e5df;
+  font-size: 13px;
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(10px);
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Jump and crouch are secondary: smaller, so the arc reads as a hierarchy. */
+.action-button.small {
+  width: 74px;
+  height: 74px;
+  font-size: 11px;
+}
+
+.action-button.active {
+  border-color: rgba(198, 154, 75, 0.78);
+  background: rgba(198, 154, 75, 0.16);
+}
+
+.action-button.available {
+  border-color: rgba(240, 223, 157, 0.55);
+}
+
+
+.hand-icon {
+  width: 26px;
+  height: 30px;
+  border-left: 6px solid #ddd;
+  border-bottom: 6px solid #ddd;
+  border-radius: 8px 8px 14px 14px;
+}
+
+.hand-icon::before {
+  content: "";
+  position: absolute;
+  left: 4px;
+  top: -2px;
+  width: 6px;
+  height: 22px;
+  background: #ddd;
+  border-radius: 999px;
+  box-shadow: 8px 2px 0 #ddd, 16px 5px 0 #ddd;
+}
+
+.run-icon {
+  width: 34px;
+  height: 30px;
+}
+
+.run-icon::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 5px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #ddd;
+}
+
+.run-icon::after {
+  content: "";
+  position: absolute;
+  inset: 10px 4px 2px 2px;
+  border-left: 6px solid #ddd;
+  border-bottom: 6px solid #ddd;
+  transform: skewX(-24deg);
+  box-shadow: 12px 6px 0 -2px #ddd;
+}
+
+.note-icon {
+  width: 20px;
+  height: 26px;
+  background: #111;
+  border: 2px solid #b79a5a;
+  border-radius: 2px;
+}
+
+.note-icon::after {
+  content: "";
+  position: absolute;
+  left: 3px;
+  top: 5px;
+  width: 10px;
+  height: 2px;
+  background: #b79a5a;
+  box-shadow: 0 5px 0 #b79a5a, 0 10px 0 #b79a5a;
+}
+
+.interaction-card {
+  left: 50%;
+  bottom: max(120px, calc(var(--safe-bottom) + 104px));
+  width: min(320px, 48vw);
+  transform: translateX(-50%);
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel-strong);
+  text-align: center;
+  pointer-events: none;
+}
+
+.interaction-hint {
+  display: block;
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 11px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.hold-track {
+  height: 8px;
+  margin-top: 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  overflow: hidden;
+}
+
+#hold-fill,
+#writing-fill {
+  width: 0%;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--gold), #f0df9d);
+}
+
+#writing-fill {
+  background: linear-gradient(90deg, #7a2220, #c83431);
+}
+
+.writing-card {
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: min(300px, 80vw);
+  padding: 14px 16px;
+  border: 1px solid rgba(200, 52, 49, 0.5);
+  border-radius: 8px;
+  background: var(--panel-strong);
+  text-align: center;
+}
+
+.writing-card .link-button {
+  margin-top: 8px;
+}
+
+/* Toasts */
+
+/* Centre dot: in first person you aim at what you want to interact with. */
+.crosshair {
+  position: absolute;
+  z-index: 2;
+  left: 50%;
+  top: 50%;
+  width: 7px;
+  height: 7px;
+  margin: -3.5px 0 0 -3.5px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.55);
+  box-shadow: 0 0 0 1.5px rgba(0, 0, 0, 0.55);
+  pointer-events: none;
+  transition: transform 120ms ease, background 120ms ease;
+}
+
+.crosshair.active {
+  transform: scale(1.7);
+  background: rgba(240, 223, 157, 0.95);
+}
+
+.game-screen.meeting-mode .crosshair,
+.game-screen.dead .crosshair {
+  display: none;
+}
+
+/* Inside a cupboard: a slatted, claustrophobic frame around the view. */
+.hide-vignette {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background:
+    linear-gradient(90deg, rgba(0, 0, 0, 0.96) 0%, rgba(0, 0, 0, 0) 22%, rgba(0, 0, 0, 0) 78%, rgba(0, 0, 0, 0.96) 100%),
+    linear-gradient(180deg, rgba(0, 0, 0, 0.96) 0%, rgba(0, 0, 0, 0) 26%, rgba(0, 0, 0, 0) 74%, rgba(0, 0, 0, 0.96) 100%),
+    repeating-linear-gradient(180deg, rgba(0, 0, 0, 0.55) 0 4px, rgba(0, 0, 0, 0) 4px 26px);
+}
+
+.hide-banner {
+  position: absolute;
+  z-index: 3;
+  left: 50%;
+  bottom: max(190px, calc(var(--safe-bottom) + 174px));
+  transform: translateX(-50%);
+  display: grid;
+  gap: 2px;
+  justify-items: center;
+  padding: 10px 18px;
+  border: 1px solid rgba(198, 154, 75, 0.45);
+  border-radius: 8px;
+  background: rgba(5, 6, 8, 0.85);
+  text-align: center;
+}
+
+.hide-banner strong {
+  font-family: Georgia, "Times New Roman", serif;
+  font-weight: 500;
+  font-size: 20px;
+  letter-spacing: 2px;
+  color: #f4e1b7;
+}
+
+.hide-banner span {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+/* Keyboard hints: shown only where there is a real pointer and keyboard. */
+.key-hints {
+  position: absolute;
+  z-index: 3;
+  display: none;
+  gap: 16px;
+  left: 50%;
+  bottom: max(14px, var(--safe-bottom));
+  transform: translateX(-50%);
+  padding: 8px 16px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(10px);
+  color: var(--muted);
+  font-size: 12px;
+  white-space: nowrap;
+  pointer-events: none;
+  transition: opacity 250ms ease;
+}
+
+.key-hints kbd {
+  display: inline-block;
+  padding: 1px 6px;
+  margin-right: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  border-bottom-width: 2px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #e6e2da;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px;
+}
+
+.key-hints.faded {
+  opacity: 0.25;
+}
+
+.toasts {
+  left: 50%;
+  /* Under the round / search clock, never behind it. */
+  top: calc(max(14px, var(--safe-top)) + 50px);
+  transform: translateX(-50%);
+  display: grid;
+  gap: 6px;
+  width: min(420px, 60vw);
+  pointer-events: none;
+}
+
+.toast {
+  padding: 8px 14px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.72);
+  color: #e8e5df;
+  font-size: 13px;
+  text-align: center;
+  backdrop-filter: blur(10px);
+  animation: toast-in 180ms ease;
+}
+
+.toast.warn {
+  border-color: rgba(198, 154, 75, 0.6);
+  color: #f4e1b7;
+}
+
+.toast.danger {
+  border-color: rgba(200, 52, 49, 0.7);
+  color: #ffd3d1;
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+}
+
+.connection-banner {
+  left: 50%;
+  bottom: max(196px, calc(var(--safe-bottom) + 180px));
+  transform: translateX(-50%);
+  padding: 8px 16px;
+  border-radius: 999px;
+  background: rgba(200, 52, 49, 0.85);
+  color: #fff;
+  font-size: 13px;
+}
+
+/* Chat */
+
+.chat-drawer {
+  left: 50%;
+  bottom: max(14px, var(--safe-bottom));
+  width: min(460px, 42vw);
+  transform: translateX(-50%);
+}
+
+.chat-toggle {
+  width: 100%;
+  min-height: 44px;
+  display: grid;
+  grid-template-columns: 36px 1fr auto 44px;
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.6);
+  color: var(--muted);
+  backdrop-filter: blur(12px);
+}
+
+.chat-unread {
+  min-width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 12px;
+  padding: 0 6px;
+}
+
+.chat-icon {
+  width: 24px;
+  height: 19px;
+  border: 3px solid #aaa;
+  border-radius: 5px;
+  margin: 0 auto;
+}
+
+.chat-icon::after {
+  content: "";
+  position: absolute;
+  right: 3px;
+  bottom: -7px;
+  border-left: 7px solid transparent;
+  border-top: 7px solid #aaa;
+}
+
+.chat-panel {
+  display: none;
+  margin-top: 8px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel-strong);
+  backdrop-filter: blur(16px);
+}
+
+.chat-drawer.open .chat-panel {
+  display: block;
+}
+
+.chat-drawer.open .chat-toggle {
+  border-radius: 8px;
+}
+
+.messages {
+  max-height: 160px;
+  overflow: auto;
+  display: grid;
+  gap: 6px;
+  padding: 2px 2px 10px;
+  font-size: 14px;
+  overscroll-behavior: contain;
+}
+
+.message {
+  color: #dfdcd5;
+  overflow-wrap: anywhere;
+}
+
+.message strong {
+  color: #f4e1b7;
+  font-weight: 600;
+}
+
+.message.system {
+  color: var(--muted);
+  font-style: italic;
+}
+
+.message.private {
+  color: #f0c36a;
+}
+
+.message.dead {
+  color: #9fb7c9;
+}
+
+.message.dead strong {
+  color: #9fb7c9;
+}
+
+.chat-form {
+  display: grid;
+  grid-template-columns: 1fr 72px;
+  gap: 8px;
+}
+
+#chat-input {
+  min-height: 42px;
+  padding: 0 12px;
+  font-size: 15px;
+}
+
+.chat-form button {
+  min-height: 42px;
+}
+
+/* Overlays */
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(2, 3, 4, 0.78);
+  backdrop-filter: blur(6px);
+  overflow: auto;
+}
+
+.overlay.soft {
+  background: rgba(2, 3, 4, 0.45);
+  place-items: start center;
+  padding-top: max(80px, calc(var(--safe-top) + 70px));
+}
+
+.overlay-card {
+  width: min(94vw, 460px);
+  padding: 24px 26px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: rgba(5, 6, 8, 0.92);
+  box-shadow: 0 24px 80px var(--shadow);
+}
+
+.overlay-card h2 {
+  margin: 6px 0 10px;
+  font-family: Georgia, "Times New Roman", serif;
+  font-weight: 500;
+  font-size: 30px;
+}
+
+.overlay-card p {
+  margin: 0 0 6px;
+  line-height: 1.5;
+}
+
+/* Match intro. Each role gets its own colour so the briefing is recognisable
+   at a glance before you have read a word of it. */
+.overlay.intro {
+  background: rgba(2, 3, 4, 0.92);
+}
+
+.intro-card {
+  width: min(94vw, 520px);
+  padding: 30px 32px 26px;
+  border: 1px solid rgba(198, 154, 75, 0.5);
+  border-radius: 12px;
+  background: radial-gradient(circle at 50% 0%, rgba(198, 154, 75, 0.14), rgba(5, 6, 8, 0.96) 70%);
+  box-shadow: 0 0 90px rgba(198, 154, 75, 0.18), 0 24px 80px var(--shadow);
+  text-align: center;
+  animation: intro-in 420ms ease both;
+}
+
+.intro-card h2 {
+  margin: 8px 0 10px;
+  font-family: Georgia, "Times New Roman", serif;
+  font-weight: 500;
+  font-size: 46px;
+  letter-spacing: 2px;
+  color: #f4e1b7;
+}
+
+.intro-body {
+  margin: 0 auto 14px;
+  max-width: 40ch;
+  color: #dfdcd5;
+  line-height: 1.55;
+}
+
+.intro-points {
+  list-style: none;
+  margin: 0 auto 18px;
+  padding: 0;
+  max-width: 40ch;
+  display: grid;
+  gap: 7px;
+  text-align: left;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.intro-points li::before {
+  content: "—";
+  margin-right: 8px;
+  color: rgba(255, 255, 255, 0.35);
+}
+
+.intro-timer {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 34px;
+  color: #f4e1b7;
+  font-variant-numeric: tabular-nums;
+}
+
+.intro-card.killer {
+  border-color: rgba(200, 52, 49, 0.65);
+  background: radial-gradient(circle at 50% 0%, rgba(200, 52, 49, 0.2), rgba(5, 6, 8, 0.96) 70%);
+  box-shadow: 0 0 110px rgba(200, 52, 49, 0.3), 0 24px 80px var(--shadow);
+}
+
+.intro-card.killer h2,
+.intro-card.killer .intro-timer {
+  color: #ff9a96;
+}
+
+.intro-card.detective {
+  border-color: rgba(106, 165, 201, 0.65);
+  background: radial-gradient(circle at 50% 0%, rgba(106, 165, 201, 0.18), rgba(5, 6, 8, 0.96) 70%);
+  box-shadow: 0 0 110px rgba(106, 165, 201, 0.28), 0 24px 80px var(--shadow);
+}
+
+.intro-card.detective h2,
+.intro-card.detective .intro-timer {
+  color: #a6d8f2;
+}
+
+@keyframes intro-in {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.97);
+  }
+}
+
+.role-card {
+  border-color: rgba(200, 52, 49, 0.5);
+  box-shadow: 0 0 80px rgba(200, 52, 49, 0.2), 0 24px 80px var(--shadow);
+}
+
+.role-card.detective {
+  border-color: rgba(106, 165, 201, 0.5);
+  box-shadow: 0 0 80px rgba(106, 165, 201, 0.2), 0 24px 80px var(--shadow);
+}
+
+.role-card .primary-button {
+  width: 100%;
+  margin-top: 14px;
+}
+
+.proposal-card {
+  text-align: center;
+}
+
+.proposal-progress {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  margin: 10px 0;
+}
+
+.proposal-progress span {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.proposal-progress span.yes {
+  background: var(--green);
+  border-color: var(--green);
+}
+
+.proposal-progress span.no {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.overlay-panel {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(2, 3, 4, 0.5);
+}
+
+.notebook {
+  width: min(92vw, 380px);
+  padding: 22px 24px;
+  border: 2px solid #2a2320;
+  border-radius: 6px;
+  background: linear-gradient(180deg, #0c0b0b, #050505);
+  box-shadow: 0 0 60px rgba(200, 52, 49, 0.25), 0 24px 80px var(--shadow);
+}
+
+.notebook h3 {
+  margin: 0;
+  font-family: Georgia, "Times New Roman", serif;
+  font-weight: 500;
+  font-size: 30px;
+  letter-spacing: 3px;
+  color: #e6d8b8;
+}
+
+.notebook-rule {
+  color: var(--muted);
+  font-size: 13px;
+  font-style: italic;
+  margin: 4px 0 14px;
+}
+
+.tag-list li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px dashed rgba(255, 255, 255, 0.12);
+}
+
+.tag-list li .player-name {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 18px;
+}
+
+.tag-list li.dead .player-name {
+  text-decoration: line-through;
+  color: var(--muted);
+}
+
+.tag-list button {
+  min-height: 38px;
+  padding: 0 14px;
+  border-radius: 6px;
+  background: linear-gradient(180deg, #b33835, #782321);
+  color: #fff;
+}
+
+/* Meeting */
+
+/* The meeting happens at a table in 3D; the ballot sits beside it rather than
+   over it, so you can still see who you are voting for. */
+.overlay.meeting {
+  place-items: start end;
+  /* Below the top-right buttons: the mic matters most while people talk. */
+  padding: calc(max(16px, var(--safe-top)) + 62px) max(16px, var(--safe-right)) 16px 16px;
+  background: none;
+  backdrop-filter: none;
+  pointer-events: none;
+}
+
+.overlay.meeting .meeting-card {
+  pointer-events: auto;
+  max-height: calc(100dvh - 96px);
+  overflow: auto;
+}
+
+.meeting-card {
+  width: min(96vw, 340px);
+  padding: 18px 20px;
+  border: 1px solid rgba(200, 52, 49, 0.4);
+  border-radius: 10px;
+  background: rgba(5, 6, 8, 0.94);
+  box-shadow: 0 24px 80px var(--shadow);
+}
+
+.meeting-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.meeting-head h2 {
+  margin: 4px 0 0;
+  font-family: Georgia, "Times New Roman", serif;
+  font-weight: 500;
+  font-size: 26px;
+}
+
+.meeting-timer {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 34px;
+  color: #f4e1b7;
+  font-variant-numeric: tabular-nums;
+}
+
+.meeting-card .muted {
+  margin: 8px 0 12px;
+  font-size: 14px;
+}
+
+.meeting-players {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 6px;
+  margin: 0 0 10px;
+  padding: 0;
+  list-style: none;
+}
+
+.meeting-timer.urgent {
+  color: #ff5a52;
+  animation: timer-pulse 1s ease-in-out infinite;
+}
+
+.meeting-players li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  min-height: 48px;
+}
+
+.meeting-players li.dead {
+  opacity: 0.45;
+}
+
+.meeting-players li.selected {
+  border-color: rgba(200, 52, 49, 0.8);
+  background: rgba(200, 52, 49, 0.14);
+}
+
+.meeting-players .vote-button {
+  min-height: 34px;
+  padding: 0 12px;
+  border-radius: 6px;
+  border: 1px solid rgba(200, 52, 49, 0.6);
+  background: rgba(200, 52, 49, 0.15);
+  color: #ffd3d1;
+  font-size: 13px;
+}
+
+.meeting-players .vote-button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.voted-mark {
+  color: var(--green);
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.tally li,
+.roles li {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 6px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.roles li .role-killer {
+  color: #ff8a86;
+}
+
+.roles li .role-detective {
+  color: var(--blue);
+}
+
+.roles li .role-civilian {
+  color: var(--muted);
+}
+
+.end-card.killer {
+  border-color: rgba(200, 52, 49, 0.6);
+  box-shadow: 0 0 100px rgba(200, 52, 49, 0.25), 0 24px 80px var(--shadow);
+}
+
+.end-card.civilians {
+  border-color: rgba(106, 165, 201, 0.6);
+  box-shadow: 0 0 100px rgba(106, 165, 201, 0.25), 0 24px 80px var(--shadow);
+}
+
+/* When the chat is emphasised during meetings */
+
+/* At the table, chat sits bottom-left so it never covers the ballot. */
+.game-screen.meeting-mode .chat-drawer {
+  left: max(16px, var(--safe-left));
+  transform: none;
+  width: min(520px, calc(100vw - 400px));
+  z-index: 7;
+}
+
+.game-screen.meeting-mode .key-hints,
+.game-screen.meeting-mode .search-timer {
+  display: none;
+}
+
+.game-screen.meeting-mode .messages {
+  max-height: 120px;
+}
+
+/* The touch controls live outside the screens so one Input instance can serve
+   both the multiplayer match and the solo run. These rules follow them out. */
+.app.meeting-mode .joystick,
+.app.meeting-mode .action-stack,
+.game-screen.meeting-mode .interaction-card {
+  display: none;
+}
+
+.app.dead .action-button.killbook,
+.app.dead #interact-button {
+  display: none;
+}
+
+/* ---------------------------------------------------------------- responsive */
+
+@media (max-width: 760px), (max-height: 520px) {
+  .top-left {
+    width: min(250px, 44vw);
+  }
+
+  .brand-title {
+    font-size: 24px;
+  }
+
+  .status-card {
+    padding: 8px 12px 10px;
+  }
+
+  .status-row #phase-label {
+    font-size: 16px;
+  }
+
+  .status-detail {
+    font-size: 13px;
+  }
+
+  .status-detail.countdown {
+    font-size: 22px;
+  }
+
+  .top-right {
+    gap: 8px;
+  }
+
+  .icon-button {
+    width: 44px;
+    height: 44px;
+  }
+
+  .joystick {
+    width: 128px;
+    height: 128px;
+  }
+
+  .joy-knob {
+    width: 50px;
+    height: 50px;
+  }
+
+  .joy-arrow.up,
+  .joy-arrow.down {
+    left: 53px;
+  }
+
+  .joy-arrow.left,
+  .joy-arrow.right {
+    top: 53px;
+  }
+
+  .action-button {
+    width: 82px;
+    height: 82px;
+    font-size: 12px;
+  }
+
+  .action-button.killbook {
+    width: 70px;
+    height: 70px;
+  }
+
+  .chat-drawer {
+    width: min(360px, 36vw);
+  }
+
+  .messages {
+    max-height: 110px;
+  }
+
+  .overlay-card {
+    padding: 18px 20px;
+  }
+
+  .overlay-card h2 {
+    font-size: 24px;
+  }
+
+  .meeting-card {
+    width: min(92vw, 280px);
+    padding: 12px 14px;
+  }
+
+  .game-screen.meeting-mode .chat-drawer {
+    width: calc(100vw - 330px);
+  }
+
+  .meeting-head h2 {
+    font-size: 19px;
+  }
+
+  .meeting-timer {
+    font-size: 26px;
+  }
+
+  /* Same arc, tightened for a phone. */
+  .action-stack {
+    right: max(8px, var(--safe-right));
+    bottom: max(8px, var(--safe-bottom));
+    width: 200px;
+    height: 208px;
+  }
+
+  .action-button {
+    width: 74px;
+    height: 74px;
+    font-size: 11px;
+  }
+
+  .action-button.small {
+    width: 58px;
+    height: 58px;
+    font-size: 10px;
+  }
+
+  #interact-button {
+    right: 4px;
+    bottom: 70px;
+  }
+
+  #jump-button {
+    right: 86px;
+    bottom: 16px;
+  }
+
+  #crouch-button {
+    right: 98px;
+    bottom: 94px;
+  }
+
+  #run-button {
+    right: 14px;
+    bottom: 158px;
+  }
+
+  .action-button.killbook {
+    width: 56px;
+    height: 56px;
+    right: 100px;
+    bottom: 166px;
+  }
+
+  /* Clear of the arc: the drawer used to sit under the crouch and jump keys.
+     Anchored left with the centring transform undone, and narrow enough to
+     stop before the buttons start. */
+  .chat-drawer {
+    right: auto;
+    left: max(8px, var(--safe-left));
+    transform: none;
+    width: min(200px, 50vw);
+    bottom: max(152px, calc(var(--safe-bottom) + 144px));
+  }
+
+  .chat-drawer {
+    width: min(320px, 40vw);
+  }
+
+}
+
+@media (orientation: portrait) and (max-width: 760px) {
+  .game-screen::after {
+    content: "Rotate to landscape for the best layout";
+    position: absolute;
+    z-index: 5;
+    left: 50%;
+    top: max(70px, calc(var(--safe-top) + 60px));
+    transform: translateX(-50%);
+    padding: 6px 12px;
+    border-radius: 999px;
+    background: rgba(0, 0, 0, 0.7);
+    color: #dedbd6;
+    font-size: 12px;
+    white-space: nowrap;
+  }
+
+  .top-left {
+    width: min(250px, 60vw);
+  }
+
+  .chat-drawer {
+    width: min(200px, 50vw);
+    left: max(8px, var(--safe-left));
+    transform: none;
+  }
+
+  .interaction-card {
+    width: min(300px, 70vw);
+  }
+}
+
+@media (hover: hover) and (pointer: fine) {
+  /* On a laptop the touch controls are just clutter: the keyboard hint strip
+     replaces them. */
+  .joystick,
+  #run-button,
+  #crouch-button,
+  #jump-button,
+  #interact-button {
+    display: none;
+  }
+
+  .key-hints {
+    display: flex;
+  }
+
+  .chat-drawer {
+    bottom: max(52px, calc(var(--safe-bottom) + 42px));
+  }
+
+  .interaction-card {
+    bottom: max(96px, calc(var(--safe-bottom) + 86px));
+  }
+
+  .hide-banner {
+    bottom: max(160px, calc(var(--safe-bottom) + 150px));
+  }
+
+  .action-stack {
+    bottom: max(70px, calc(var(--safe-bottom) + 60px));
+  }
+
+  .primary-button:hover,
+  .secondary-button:hover,
+  .icon-button:hover,
+  .action-button:hover,
+  .chat-form button:hover,
+  .start-button:hover:not(:disabled) {
+    transform: translateY(-1px);
+  }
+}
+
+@media (max-height: 420px) {
+  .top-left {
+    width: 230px;
+    gap: 6px;
+  }
+
+  .brand-title {
+    font-size: 22px;
+  }
+
+  .status-card {
+    padding: 6px 10px 8px;
+  }
+
+  .status-extra {
+    display: none;
+  }
+
+  .start-button {
+    min-height: 40px;
+  }
+
+  .joystick {
+    width: 112px;
+    height: 112px;
+    bottom: max(16px, var(--safe-bottom));
+  }
+
+  .joy-knob {
+    width: 44px;
+    height: 44px;
+  }
+
+  .joy-arrow.up,
+  .joy-arrow.down {
+    left: 45px;
+  }
+
+  .joy-arrow.left,
+  .joy-arrow.right {
+    top: 45px;
+  }
+
+  .messages {
+    max-height: 90px;
+  }
+
+  .interaction-card {
+    bottom: max(232px, calc(var(--safe-bottom) + 224px));
+  }
+}
+
+
+/* ---------------------------------------------------------------- loading */
+
+.loading-screen {
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  padding: max(40px, calc(var(--safe-top) + 24px)) 24px max(28px, calc(var(--safe-bottom) + 16px));
+  /* Opaque. It used to let the 3D school show through at about half strength,
+     which read as an unfinished overlay rather than a loading screen — and on
+     a cold start the thing showing through is a black void anyway. */
+  background:
+    radial-gradient(circle at 50% 28%, rgba(200, 52, 49, 0.2), transparent 32rem),
+    linear-gradient(180deg, #06080c 0%, #0b0d13 48%, #04060a 100%);
+  transition: opacity 500ms ease;
+}
+
+.loading-screen.fade-out {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.loading-top {
+  text-align: center;
+  margin-top: 6vh;
+  animation: loading-rise 900ms ease both;
+}
+
+.loading-logo {
+  margin: 8px 0 6px;
+  font-family: Georgia, "Times New Roman", serif;
+  font-weight: 500;
+  font-size: clamp(56px, 12vw, 128px);
+  line-height: 1;
+  letter-spacing: 2px;
+  color: #f4f0e8;
+  text-shadow: 0 0 40px rgba(200, 52, 49, 0.55), 0 12px 40px rgba(0, 0, 0, 0.8);
+}
+
+.loading-sub {
+  margin: 0;
+  color: var(--muted);
+  font-size: 15px;
+  letter-spacing: 1px;
+}
+
+.loading-bottom {
+  width: min(560px, 92vw);
+  display: grid;
+  gap: 12px;
+  animation: loading-rise 900ms 200ms ease both;
+}
+
+.loading-bar {
+  height: 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(0, 0, 0, 0.55);
+  overflow: hidden;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6);
+}
+
+.loading-fill {
+  width: 0%;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #7a2220, #c83431 60%, #f0df9d);
+  box-shadow: 0 0 18px rgba(200, 52, 49, 0.7);
+  transition: width 400ms ease;
+  position: relative;
+}
+
+.loading-fill::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.35) 50%, transparent 100%);
+  background-size: 200% 100%;
+  animation: loading-sheen 1.6s linear infinite;
+}
+
+.loading-status-row {
+  display: flex;
+  justify-content: space-between;
+  color: #dfdcd5;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+
+.loading-tip {
+  margin-top: 6px;
+  padding: 14px 18px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  background: rgba(5, 6, 8, 0.72);
+  backdrop-filter: blur(12px);
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 14px;
+  align-items: center;
+  min-height: 64px;
+}
+
+.tip-label {
+  align-self: start;
+  padding: 3px 9px;
+  border-radius: 999px;
+  border: 1px solid rgba(198, 154, 75, 0.6);
+  color: #f4e1b7;
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+#loading-tip {
+  margin: 0;
+  color: #e8e5df;
+  font-size: 15px;
+  line-height: 1.45;
+  transition: opacity 350ms ease;
+}
+
+#loading-tip.swap {
+  opacity: 0;
+}
+
+@keyframes loading-rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+}
+
+@keyframes loading-sheen {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+
+/* ---------------------------------------------------------------- entry */
+
+/* The entry screen: the two multiplayer games either side of the one thing you
+   have to do. The solo mode is not here — it lives on the next screen, so the
+   first thing anyone sees is the game this is actually about. */
+.entry-layout {
+  display: grid;
+  grid-template-columns: minmax(230px, 330px) minmax(300px, 430px) minmax(230px, 330px);
+  gap: 22px;
+  align-items: center;
+  width: min(1180px, 100%);
+}
+
+.entry-panel {
+  width: auto;
+  text-align: center;
+}
+
+.entry-panel .field-label {
+  display: block;
+  text-align: left;
+}
+
+.entry-blurb {
+  margin: 0 0 20px;
+  color: #dfdcd5;
+  font-size: 15px;
+  line-height: 1.55;
+}
+
+/* Only surfaced when the server is still waking, and deliberately a link
+   rather than a card: it is a way to spend the wait, not a third game mode
+   competing with the two on either side. */
+#entry-solo {
+  margin-top: 10px;
+}
+
+#entry-solo.hidden {
+  display: none;
+}
+
+.mode-card {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  overflow: hidden;
+  background: rgba(5, 6, 8, 0.8);
+  box-shadow: 0 24px 80px var(--shadow);
+  backdrop-filter: blur(12px);
+}
+
+.mode-card.killer {
+  border-color: rgba(200, 52, 49, 0.35);
+}
+
+.mode-card.detective {
+  border-color: rgba(106, 165, 201, 0.35);
+}
+
+/* The art is a still frame rendered from the game itself. */
+.mode-art {
+  display: block;
+  width: 100%;
+  height: 168px;
+  object-fit: cover;
+  border-bottom: 1px solid var(--line);
+  background: #07080a;
+}
+
+.mode-card-body {
+  padding: 16px 18px 18px;
+}
+
+.mode-card h3 {
+  margin: 4px 0 2px;
+  font-family: Georgia, "Times New Roman", serif;
+  font-weight: 500;
+  font-size: 26px;
+}
+
+.mode-meta {
+  margin: 0 0 12px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.mode-card ul {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 8px;
+  color: #dfdcd5;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.mode-card strong {
+  color: #f4e1b7;
+  font-weight: 600;
+}
+
+@media (max-width: 980px) {
+  .entry-layout {
+    grid-template-columns: minmax(0, 480px);
+    justify-content: center;
+    gap: 16px;
+  }
+
+  /* Name first on a phone — the cards are there to be read, not scrolled past
+     on the way to the only control on the screen. */
+  .entry-panel {
+    order: 0;
+  }
+
+  .mode-card.killer {
+    order: 1;
+  }
+
+  .mode-card.detective {
+    order: 2;
+  }
+
+  .menu-screen {
+    align-content: start;
+    padding-top: max(20px, var(--safe-top));
+  }
+}
+
+@media (max-height: 520px) and (min-width: 981px) {
+  .mode-art {
+    height: 120px;
+  }
+
+  .mode-card ul {
+    gap: 4px;
+    font-size: 13px;
+  }
+
+  .title {
+    font-size: 40px;
+    margin-bottom: 12px;
+  }
+}
+
+@media (max-height: 480px) {
+  .loading-screen {
+    padding-top: max(14px, var(--safe-top));
+  }
+
+  .loading-top {
+    margin-top: 0;
+  }
+
+  .loading-logo {
+    font-size: clamp(40px, 9vw, 64px);
+    margin: 2px 0 2px;
+  }
+
+  .loading-sub {
+    font-size: 12px;
+  }
+
+  .loading-bottom {
+    gap: 8px;
+  }
+
+  .loading-tip {
+    min-height: 0;
+    padding: 8px 12px;
+  }
+
+  #loading-tip {
+    font-size: 13px;
+  }
+}
+
+/* ------------------------------------------------------------------ torch icon */
+
+/* Shared by the multiplayer torch toggle and the solo one. */
+.torch-icon {
+  width: 24px;
+  height: 24px;
+  display: block;
+  position: relative;
+}
+
+.torch-icon::before {
+  content: "";
+  position: absolute;
+  left: 9px;
+  top: 9px;
+  width: 6px;
+  height: 12px;
+  border-radius: 2px;
+  background: currentColor;
+}
+
+.torch-icon::after {
+  content: "";
+  position: absolute;
+  left: 6px;
+  top: 2px;
+  width: 12px;
+  height: 8px;
+  border-radius: 2px 2px 6px 6px;
+  background: currentColor;
+  opacity: 0.55;
+}
+
+.icon-button.active .torch-icon::after {
+  opacity: 1;
+  box-shadow: 0 -4px 12px rgba(255, 228, 160, 0.75);
+}
+
+/* ------------------------------------------------------------ shared controls */
+
+/* The joystick and action stack sit outside the screens so a single Input
+   instance drives both the multiplayer match and the solo run. `contents`
+   keeps their absolute positioning relative to the app, unchanged. */
+.touch-controls {
+  display: contents;
+}
+
+.touch-controls.hidden {
+  display: none;
+}
+
+/* ------------------------------------------------------------------ solo mode */
+
+.choice-card.solo {
+  border-color: rgba(201, 180, 105, 0.42);
+  background: linear-gradient(140deg, rgba(122, 104, 44, 0.24), rgba(14, 14, 18, 0.7));
+}
+
+.choice-card.solo strong .tag {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  background: rgba(201, 180, 105, 0.2);
+  border: 1px solid rgba(201, 180, 105, 0.45);
+  color: #e6d79c;
+  vertical-align: middle;
+}
+
+.solo-screen {
+  pointer-events: none;
+  background: transparent;
+}
+
+.solo-screen .overlay,
+.solo-screen button,
+.solo-screen .solo-prompt {
+  pointer-events: auto;
+}
+
+/* Closes in as the stalker does. The colour is swapped from JS so red means
+   something rather than being permanent decoration. */
+.solo-vignette {
+  --solo-dread: rgba(8, 7, 4, 0.92);
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  opacity: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse at center, transparent 22%, var(--solo-dread) 100%);
+  transition: opacity 260ms linear, background 600ms linear;
+}
+
+.solo-hud {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+}
+
+.solo-top {
+  position: absolute;
+  top: max(16px, var(--safe-top));
+  left: max(16px, var(--safe-left));
+  right: max(16px, var(--safe-right));
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.solo-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 14px;
+  border-radius: 12px;
+  background: rgba(10, 10, 12, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  backdrop-filter: blur(8px);
+}
+
+.solo-stat-label {
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  opacity: 0.55;
+}
+
+.solo-stat strong {
+  font-size: 18px;
+  font-variant-numeric: tabular-nums;
+}
+
+.solo-compass {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px 8px 10px;
+  border-radius: 12px;
+  background: rgba(10, 10, 12, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  backdrop-filter: blur(8px);
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  font-variant-numeric: tabular-nums;
+  color: #e6d79c;
+}
+
+.solo-compass-dial {
+  position: relative;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1px solid rgba(230, 215, 156, 0.35);
+  background: rgba(0, 0, 0, 0.4);
+}
+
+/* The needle points at the nearest objective. It gives a direction, never a
+   route — you still have to find your own way there. */
+.solo-arrow {
+  position: absolute;
+  inset: 0;
+  transition: transform 90ms linear;
+}
+
+.solo-arrow::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 4px;
+  transform: translateX(-50%);
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-bottom: 11px solid #f0df9d;
+}
+
+.solo-top-actions {
+  margin-left: auto;
+  display: flex;
+  gap: 8px;
+}
+
+/* Only worth looking at while it is draining; a permanently full bar is just
+   another bright line in a game about not being able to see. */
+.solo-stamina {
+  position: absolute;
+  left: 50%;
+  bottom: max(26px, calc(var(--safe-bottom) + 16px));
+  transform: translateX(-50%);
+  width: min(220px, 40vw);
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+  opacity: 0;
+  transition: opacity 400ms ease;
+}
+
+.solo-stamina.spent {
+  opacity: 1;
+}
+
+/* Winded: the bar refills in a dull red, and sprint comes back when it is full. */
+.solo-stamina.winded .solo-stamina-fill {
+  background: linear-gradient(90deg, #6e2622, #a4443a);
+}
+
+.solo-stamina-fill {
+  width: 100%;
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #8d7a3c, #c9b469);
+  transform-origin: left center;
+  transition: transform 90ms linear;
+}
+
+.solo-seed {
+  position: absolute;
+  right: max(16px, var(--safe-right));
+  bottom: max(14px, var(--safe-bottom));
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  opacity: 0.3;
+}
+
+.solo-prompt {
+  position: absolute;
+  left: 50%;
+  bottom: 22%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+  padding: 12px 20px;
+  border-radius: 14px;
+  background: rgba(10, 10, 12, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  font-size: 14px;
+  letter-spacing: 0.04em;
+}
+
+.solo-prompt .hold-track {
+  width: 170px;
+}
+
+#solo-hold-fill {
+  height: 100%;
+  width: 100%;
+  border-radius: 999px;
+  background: #f0df9d;
+  transform-origin: left center;
+  transform: scaleX(0);
+}
+
+.solo-hint {
+  position: absolute;
+  left: 50%;
+  bottom: max(58px, calc(var(--safe-bottom) + 46px));
+  transform: translateX(-50%);
+  margin: 0;
+  max-width: min(520px, 80vw);
+  text-align: center;
+  font-size: 13px;
+  letter-spacing: 0.03em;
+  color: rgba(240, 223, 157, 0.82);
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8);
+  transition: opacity 700ms ease;
+}
+
+.solo-hint.faded {
+  opacity: 0;
+}
+
+.solo-end .overlay-card {
+  border-color: rgba(200, 52, 49, 0.35);
+}
+
+.solo-end.escaped .overlay-card {
+  border-color: rgba(127, 172, 131, 0.45);
+}
+
+.solo-stats {
+  list-style: none;
+  margin: 18px 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.solo-stats li {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 9px 14px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.05);
+  font-size: 14px;
+}
+
+.solo-stats strong {
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 760px), (max-height: 520px) {
+  .solo-top {
+    gap: 8px;
+  }
+
+  .solo-stat {
+    padding: 6px 10px;
+  }
+
+  .solo-stat strong {
+    font-size: 15px;
+  }
+
+  .solo-compass {
+    padding: 6px 10px 6px 8px;
+    font-size: 10px;
+  }
+
+  .solo-compass-dial {
+    width: 28px;
+    height: 28px;
+  }
+
+  /* Clear of the joystick, and clear of each other — on a phone these two sat
+     on exactly the same line. */
+  .solo-stamina {
+    bottom: max(196px, calc(var(--safe-bottom) + 186px));
+  }
+
+  .solo-hint {
+    font-size: 12px;
+    bottom: max(214px, calc(var(--safe-bottom) + 204px));
+  }
+}
+
+/* ------------------------------------------------- solo: lives, compass, hits */
+
+.solo-lives {
+  display: flex;
+  gap: 5px;
+  padding-top: 3px;
+}
+
+.solo-life {
+  width: 11px;
+  height: 11px;
+  border-radius: 3px;
+  background: #c83431;
+  box-shadow: 0 0 8px rgba(200, 52, 49, 0.6);
+}
+
+.solo-life.spent {
+  background: rgba(255, 255, 255, 0.14);
+  box-shadow: none;
+}
+
+/* The compass is dead weight until you are within range of something. Making
+   that state visibly inert is the point: it tells the player the tool works and
+   they are simply nowhere near anything yet. */
+.solo-compass.dead {
+  color: rgba(255, 255, 255, 0.35);
+}
+
+.solo-compass.dead .solo-arrow {
+  opacity: 0;
+}
+
+.solo-compass.dead .solo-compass-dial::after {
+  content: "";
+  position: absolute;
+  inset: 40%;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.22);
+  animation: solo-search 2.4s ease-in-out infinite;
+}
+
+@keyframes solo-search {
+  0%, 100% { opacity: 0.2; transform: scale(0.7); }
+  50% { opacity: 0.6; transform: scale(1.15); }
+}
+
+/* Full-screen hit flash for losing a life and for an ambush landing. */
+.solo-flash {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  opacity: 0;
+  pointer-events: none;
+  background: radial-gradient(circle at center, rgba(180, 26, 22, 0.55), rgba(90, 6, 6, 0.95));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .solo-compass.dead .solo-compass-dial::after {
+    animation: none;
+  }
+
+  .solo-flash {
+    display: none;
+  }
+}
+
+/* --------------------------------------------------------- leave confirmation */
+
+.overlay-card.narrow {
+  max-width: 380px;
+}
+
+.secondary-button.danger {
+  border-color: rgba(200, 52, 49, 0.55);
+  color: #f0b3b1;
+}
+
+/* ------------------------------------------------- entry: solo shortcut */
+
+.secondary-button.wide {
+  width: 100%;
+  margin-top: 16px;
+}
+
+.mode-note {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+  text-align: center;
+}
+
+/* Multiplayer needs the socket. While the server wakes, Continue says so
+   rather than failing when pressed. */
+.primary-button.waiting {
+  opacity: 0.45;
+  cursor: progress;
+}
+
+/* Death and respawn: the screen goes out with you, HUD and all. */
+.solo-fade {
+  position: absolute;
+  inset: 0;
+  z-index: 19;
+  opacity: 0;
+  pointer-events: none;
+  background: #000;
+}
+
+/* The endgame: the power is out and the compass is the only thing still on. */
+.solo-screen.blackout .solo-compass {
+  border-color: rgba(200, 52, 49, 0.5);
+  color: #f0b3b1;
+  box-shadow: 0 0 22px rgba(200, 52, 49, 0.25);
+}
+
+.solo-screen.blackout .solo-arrow::before {
+  border-bottom-color: #f0b3b1;
+}
+
+/* The face, at the moment it takes you. Pixelated on purpose: the texture is
+   128px and blowing it up smoothly would hide exactly the wrongness that makes
+   it work at a distance. */
+.solo-face {
+  position: absolute;
+  inset: 0;
+  /* Above the HUD, which is the whole point: when it has you, the fuse count
+     and the compass are not what you should be looking at. */
+  z-index: 20;
+  opacity: 0;
+  pointer-events: none;
+  display: grid;
+  place-items: center;
+  background: #000;
+  overflow: hidden;
+}
+
+.solo-face.hit {
+  opacity: 1;
+}
+
+.solo-face-image {
+  /* `min`, not `max`. Sized against the longest edge, what landed was a fifth
+     of a face at enormous magnification — a shape, not a head. Against the
+     shortest, the whole thing fits with a little to spare, and since the image
+     is drawn on the same black as the overlay behind it there is nothing to
+     see at the edges. */
+  width: min(118vw, 118vh);
+  height: min(118vw, 118vh);
+  filter: contrast(1.3) brightness(1.1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .solo-face {
+    display: none;
+  }
+}
+
+/* Light going off in its face while it takes you: three hits, driven from JS.
+   Above the face so a flash washes it out, then lets it back through. */
+.solo-strobe {
+  position: absolute;
+  inset: 0;
+  z-index: 21;
+  opacity: 0;
+  pointer-events: none;
+  background: #fff;
+  mix-blend-mode: screen;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .solo-strobe {
+    display: none;
+  }
+}
+
+.interaction-card.info .hold-track {
+  display: none;
+}
+
+/* ------------------------------------------------------------------ stage */
+/* The intro, the role reveal and the heart attack are rendered as their own
+   3D scenes; this is the text laid over them. While one plays, the HUD goes. */
+.stage-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 9;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 24px 16px calc(9vh + var(--safe-bottom));
+  text-align: center;
+  pointer-events: none;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.85) 0%, rgba(0, 0, 0, 0) 45%);
+}
+
+.stage-overlay.hidden {
+  display: none;
+}
+
+.stage-overlay p {
+  margin: 0;
+  max-width: 760px;
+  text-shadow: 0 2px 18px rgba(0, 0, 0, 0.9);
+}
+
+.stage-title {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(24px, 4.4vw, 46px);
+  line-height: 1.15;
+  letter-spacing: 0.01em;
+}
+
+.stage-role {
+  font-size: clamp(15px, 2vw, 20px);
+  font-weight: 800;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.stage-role:empty,
+.stage-sub:empty,
+.stage-title:empty {
+  display: none;
+}
+
+.stage-role.killer {
+  color: #ff4a44;
+}
+
+.stage-role.detective {
+  color: #7cc4f0;
+}
+
+.stage-role.hero {
+  color: #ffd46a;
+}
+
+.stage-role.civilian {
+  color: #e9e2d2;
+}
+
+.stage-sub {
+  font-size: clamp(13px, 1.6vw, 16px);
+  color: var(--muted);
+}
+
+.stage-overlay.rise p {
+  animation: stage-rise 1.1s ease-out both;
+}
+
+.stage-overlay.rise .stage-role {
+  animation-delay: 0.7s;
+}
+
+.stage-overlay.rise .stage-sub {
+  animation-delay: 1.3s;
+}
+
+@keyframes stage-rise {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.game-screen.staging > :not(.stage-overlay),
+.game-screen.staging ~ .touch-controls {
+  visibility: hidden;
+}
+
+/* The search minute. */
+.search-timer {
+  position: absolute;
+  top: calc(12px + var(--safe-top));
+  left: 50%;
+  z-index: 3;
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 7px 16px;
+  transform: translateX(-50%);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--panel);
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.search-timer.hidden {
+  display: none;
+}
+
+.search-timer-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.search-timer-value {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 20px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.search-timer.urgent {
+  border-color: rgba(200, 52, 49, 0.7);
+}
+
+.search-timer.urgent .search-timer-value {
+  color: #ff5a52;
+  animation: timer-pulse 1s ease-in-out infinite;
+}
+
+@keyframes timer-pulse {
+  50% {
+    opacity: 0.45;
+  }
+}
+
+@media (max-width: 640px) {
+  .search-timer {
+    top: calc(58px + var(--safe-top));
+  }
+}
+
+/* A phone held upright: the ballot across the top, chat along the bottom. */
+@media (max-width: 560px) and (orientation: portrait) {
+  .overlay.meeting {
+    place-items: start center;
+  }
+
+  .overlay.meeting .meeting-card {
+    width: 94vw;
+    max-height: 48dvh;
+  }
+
+  .game-screen.meeting-mode .chat-drawer {
+    width: calc(100vw - 32px);
+  }
+}
+
+/* The quick chat button in the top bar. */
+.icon-button .chat-icon {
+  width: 22px;
+  height: 22px;
+  color: var(--ink);
+}
+
+.chat-button-dot {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.6);
+}
+
+.chat-button-dot.hidden {
+  display: none;
+}
+
+@media (max-width: 640px) {
+  .toasts {
+    top: calc(106px + var(--safe-top));
+  }
+}
+
+/* The run out of the Lobby is first person and nothing else: no HUD, no
+   buttons, only the fade that ends it. */
+.solo-screen.escaping > :not(.solo-fade),
+.app:has(.solo-screen.escaping) .touch-controls {
+  visibility: hidden;
+}
+
+/* Waking up after the last life: eyelids, blood at the edges of your sight,
+   and nothing else of the HUD. */
+.solo-screen.waking > :not(.solo-fade):not(.solo-eyes):not(.solo-blood),
+.app:has(.solo-screen.waking) .touch-controls {
+  visibility: hidden;
+}
+
+.solo-eyes,
+.solo-blood {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  display: none;
+}
+
+.solo-screen.waking .solo-eyes,
+.solo-screen.waking .solo-blood {
+  display: block;
+}
+
+.solo-eyes {
+  z-index: 18;
+  overflow: hidden;
+}
+
+.solo-eyes .lid {
+  position: absolute;
+  left: -10%;
+  width: 120%;
+  height: 56%;
+  background: #000;
+  will-change: transform;
+}
+
+.solo-eyes .lid.top {
+  top: 0;
+  border-radius: 0 0 50% 50% / 0 0 40% 40%;
+  box-shadow: 0 18px 40px 20px #000;
+}
+
+.solo-eyes .lid.bottom {
+  bottom: 0;
+  border-radius: 50% 50% 0 0 / 40% 40% 0 0;
+  box-shadow: 0 -18px 40px 20px #000;
+}
+
+.solo-blood {
+  z-index: 17;
+  background:
+    radial-gradient(ellipse 70% 60% at 50% 50%, transparent 55%, rgba(90, 0, 0, 0.55) 80%, rgba(40, 0, 0, 0.92) 100%),
+    radial-gradient(circle at 12% 18%, rgba(120, 0, 0, 0.75) 0, rgba(120, 0, 0, 0) 14%),
+    radial-gradient(circle at 86% 8%, rgba(110, 0, 0, 0.7) 0, rgba(110, 0, 0, 0) 11%),
+    linear-gradient(180deg, rgba(110, 0, 0, 0.7) 0, rgba(110, 0, 0, 0) 22%) 78% 0 / 2.2% 38% no-repeat,
+    linear-gradient(180deg, rgba(100, 0, 0, 0.65) 0, rgba(100, 0, 0, 0) 20%) 23% 0 / 1.6% 30% no-repeat;
+}
+
+/* After the last fuse: one order, in red, until you are out. */
+.solo-run-banner {
+  position: absolute;
+  left: 50%;
+  top: 22%;
+  transform: translateX(-50%);
+  margin: 0;
+  width: max-content;
+  max-width: 92vw;
+  text-align: center;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(22px, 3.6vw, 40px);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: #ff2a22;
+  text-shadow: 0 0 18px rgba(255, 30, 20, 0.55), 0 2px 10px rgba(0, 0, 0, 0.9);
+  pointer-events: none;
+  animation: run-banner 1.4s ease-in-out infinite;
+}
+
+.solo-run-banner.hidden {
+  display: none;
+}
+
+@keyframes run-banner {
+  50% {
+    opacity: 0.6;
+    transform: translateX(-50%) scale(1.04);
+  }
+}
