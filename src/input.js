@@ -1,8 +1,8 @@
 // Keyboard, virtual joystick and touch action buttons. Produces a normalised
-// movement vector plus run/hold flags read by the game loop each frame.
+// movement vector plus run/crouch/hold flags read by the game loop each frame.
 
 export class Input {
-  constructor({ joystick, knob, interactButton, runButton, jumpButton, crouchButton, isTyping, onJump, onToggleTorch }) {
+  constructor({ joystick, knob, interactButton, runButton, crouchButton, isTyping }) {
     this.keys = new Set();
     this.x = 0;
     this.y = 0;
@@ -12,8 +12,9 @@ export class Input {
     this.crouchOn = false;
     this.hold = false;
     this.locked = false;
-    this.onJump = onJump || (() => {});
-    this.onToggleTorch = onToggleTorch || (() => {});
+    // Game-specific keys (inventory slots, use, combine…). Return true if the
+    // key was handled.
+    this.onKey = () => false;
     this.runButton = runButton;
     this.crouchButton = crouchButton;
     this.isTyping = isTyping || (() => false);
@@ -28,8 +29,7 @@ export class Input {
       if (event.repeat) return;
       if (key === "shift") this.toggleRun();
       else if (key === "c") this.toggleCrouch();
-      else if (key === " ") this.onJump();
-      else if (key === "f") this.onToggleTorch();
+      else this.onKey(key);
       this.keys.add(key);
     });
     window.addEventListener("keyup", (event) => {
@@ -80,13 +80,6 @@ export class Input {
         this.toggleCrouch();
       });
       crouchButton.addEventListener("contextmenu", (event) => event.preventDefault());
-    }
-    if (jumpButton) {
-      jumpButton.addEventListener("pointerdown", (event) => {
-        event.preventDefault();
-        this.onJump();
-      });
-      jumpButton.addEventListener("contextmenu", (event) => event.preventDefault());
     }
   }
 

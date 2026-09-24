@@ -1,0 +1,14 @@
+{
+  "name": "Jugaad Escape",
+  "short_name": "Jugaad Escape",
+  "description": "Motu Sir has locked the bank. Improvise your way out.",
+  "start_url": "./",
+  "display": "fullscreen",
+  "background_color": "#0a1a42",
+  "theme_color": "#12306b",
+  "icons": [
+    { "src": "assets/icon.svg", "sizes": "any", "type": "image/svg+xml" },
+    { "src": "assets/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" },
+    { "src": "assets/icon-180.png", "sizes": "180x180", "type": "image/png" }
+  ]
+}

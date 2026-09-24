@@ -1,0 +1,874 @@
+/* Jugaad Escape: the bank's HUD, on top of the solo-mode styles it grew out
+   of (styles.css). Bank blue and a marigold accent; everything else stays
+   dark glass so the office behind it reads. */
+
+:root {
+  --bank-blue: #12306b;
+  --marigold: #f2b632;
+  --calm: #7fbf8a;
+  --warn: #f2b632;
+  --danger: #ff5a4e;
+  --chance: #6fc3ff;
+}
+
+/* -------------------------------------------------------------------- top */
+
+.hud-attempts {
+  display: flex;
+  gap: 5px;
+  padding-top: 3px;
+}
+
+/* An office ID card per chance. */
+.hud-attempt {
+  width: 14px;
+  height: 18px;
+  border-radius: 3px;
+  background: linear-gradient(180deg, var(--bank-blue) 0 38%, #f4f0e6 38%);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.35);
+}
+
+.hud-attempt.spent {
+  opacity: 0.18;
+  filter: grayscale(1);
+}
+
+.hud-boss {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 9px 14px;
+  border-radius: 12px;
+  background: rgba(10, 10, 12, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(8px);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  transition: border-color 200ms ease, box-shadow 200ms ease, color 200ms ease;
+}
+
+.hud-boss-face {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 10px currentColor;
+}
+
+.hud-boss.calm { color: var(--calm); }
+.hud-boss.warn { color: var(--warn); border-color: rgba(242, 182, 50, 0.45); }
+.hud-boss.chance { color: var(--chance); border-color: rgba(111, 195, 255, 0.5); }
+.hud-boss.danger {
+  color: var(--danger);
+  border-color: rgba(255, 90, 78, 0.6);
+  box-shadow: 0 0 24px rgba(255, 90, 78, 0.25);
+  animation: hud-throb 0.8s ease-in-out infinite;
+}
+
+@keyframes hud-throb {
+  50% { box-shadow: 0 0 34px rgba(255, 90, 78, 0.45); }
+}
+
+/* ------------------------------------------------------------------ doors */
+
+.hud-doors {
+  position: absolute;
+  top: calc(max(16px, var(--safe-top)) + 62px);
+  left: max(16px, var(--safe-left));
+  margin: 0;
+  padding: 10px 12px;
+  list-style: none;
+  display: grid;
+  gap: 7px;
+  max-width: min(320px, 44vw);
+  border-radius: 12px;
+  background: rgba(10, 10, 12, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(6px);
+  font-size: 11px;
+}
+
+.hud-doors li {
+  display: grid;
+  gap: 2px;
+  opacity: 0.9;
+}
+
+.hud-doors strong {
+  font-size: 12px;
+  letter-spacing: 0.02em;
+}
+
+.hud-doors li.unlocked strong { color: var(--marigold); }
+.hud-doors li.open strong { color: var(--calm); }
+
+.hud-door-steps {
+  color: rgba(244, 240, 232, 0.62);
+  white-space: pre-wrap;
+}
+
+/* ------------------------------------------------------ being watched */
+
+.hud-eye {
+  position: absolute;
+  top: calc(max(16px, var(--safe-top)) + 70px);
+  left: 50%;
+  transform: translateX(-50%);
+  display: grid;
+  justify-items: center;
+  gap: 5px;
+  opacity: 0;
+  transition: opacity 200ms ease;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--warn);
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.9);
+}
+
+.hud-eye.show { opacity: 1; }
+.hud-eye.hot { color: var(--danger); }
+
+.hud-eye-track {
+  width: min(240px, 50vw);
+  height: 7px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.55);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.15);
+  overflow: hidden;
+}
+
+#hud-eye-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--warn), var(--danger));
+  transform-origin: left center;
+  transform: scaleX(0);
+}
+
+.hud-seated {
+  position: absolute;
+  top: calc(max(16px, var(--safe-top)) + 70px);
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: rgba(22, 60, 34, 0.7);
+  border: 1px solid rgba(127, 191, 138, 0.5);
+  color: #cdebd3;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+/* -------------------------------------------------------------- prompts */
+
+.solo-prompt {
+  bottom: calc(max(16px, var(--safe-bottom)) + 150px);
+  max-width: min(560px, 90vw);
+  text-align: center;
+  pointer-events: none !important;
+}
+
+#solo-prompt-label {
+  font-weight: 700;
+  font-size: 15px;
+}
+
+.solo-prompt-sub {
+  font-size: 12px;
+  color: rgba(244, 240, 232, 0.7);
+  line-height: 1.4;
+}
+
+#solo-hold-fill {
+  background: var(--marigold);
+}
+
+.hud-subtitle {
+  position: absolute;
+  left: 50%;
+  top: 30%;
+  transform: translateX(-50%);
+  margin: 0;
+  max-width: min(620px, 88vw);
+  padding: 8px 14px;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.62);
+  text-align: center;
+  font-size: 16px;
+  line-height: 1.4;
+  color: #fff;
+}
+
+.hud-subtitle.shout {
+  font-size: 19px;
+  font-weight: 800;
+  color: #ffd9d4;
+  border: 1px solid rgba(255, 90, 78, 0.5);
+}
+
+.hud-subtitle.aside {
+  font-style: italic;
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.hud-subtitle-who {
+  color: var(--marigold);
+  font-weight: 700;
+  font-style: normal;
+}
+
+.solo-hint {
+  bottom: calc(max(16px, var(--safe-bottom)) + 112px);
+  max-width: min(600px, 88vw);
+  padding: 6px 12px;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.45);
+  color: #fff1cc;
+  font-size: 13.5px;
+  line-height: 1.45;
+}
+
+.hud-noise {
+  position: absolute;
+  left: 50%;
+  top: 56%;
+  transform: translate(-50%, 0) scale(0.8);
+  opacity: 0;
+  padding: 4px 12px;
+  border-radius: 999px;
+  border: 2px solid rgba(242, 182, 50, 0.8);
+  color: var(--warn);
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-size: 12px;
+  transition: opacity 300ms ease, transform 300ms ease;
+}
+
+.hud-noise.show {
+  opacity: 1;
+  transform: translate(-50%, 0) scale(1);
+}
+
+.hud-noise.loud {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+/* ------------------------------------------------------------- the bag */
+
+.hud-bag {
+  position: absolute;
+  left: 50%;
+  bottom: max(14px, var(--safe-bottom));
+  transform: translateX(-50%);
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  pointer-events: none;
+}
+
+.hud-inventory {
+  display: flex;
+  gap: 6px;
+  pointer-events: auto;
+}
+
+.hud-slot {
+  position: relative;
+  width: 92px;
+  height: 52px;
+  padding: 16px 6px 4px;
+  border-radius: 10px;
+  background: rgba(10, 10, 12, 0.62);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  backdrop-filter: blur(6px);
+  font-size: 11px;
+  line-height: 1.15;
+  text-align: center;
+  color: #f4f0e8;
+}
+
+.hud-slot.empty {
+  opacity: 0.4;
+}
+
+.hud-slot.selected {
+  border-color: var(--marigold);
+  background: rgba(60, 44, 10, 0.72);
+  box-shadow: 0 0 0 1px var(--marigold), 0 0 18px rgba(242, 182, 50, 0.3);
+}
+
+.hud-slot-key {
+  position: absolute;
+  top: 3px;
+  left: 6px;
+  font-size: 10px;
+  font-weight: 700;
+  opacity: 0.55;
+}
+
+.hud-slot-uses {
+  position: absolute;
+  top: 3px;
+  right: 6px;
+  font-size: 10px;
+  color: var(--marigold);
+}
+
+.hud-slot-name {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.hud-item-note {
+  margin: 0;
+  max-width: min(480px, 90vw);
+  font-size: 11.5px;
+  color: rgba(244, 240, 232, 0.7);
+  text-align: center;
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.9);
+}
+
+/* -------------------------------------------------------------- the slap */
+
+.solo-flash {
+  background: radial-gradient(circle at 60% 50%, rgba(255, 255, 255, 0.95), rgba(255, 196, 180, 0.8));
+}
+
+.thappad {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+  font-family: Impact, "Arial Black", sans-serif;
+  font-size: clamp(56px, 16vw, 160px);
+  letter-spacing: 0.04em;
+  color: #ffdc3c;
+  -webkit-text-stroke: 4px #111;
+  text-shadow: 6px 6px 0 #c62828;
+}
+
+.thappad.pop {
+  animation: thappad-pop 900ms cubic-bezier(0.2, 1.6, 0.4, 1) both;
+}
+
+@keyframes thappad-pop {
+  0% { transform: scale(0.2) rotate(-18deg); opacity: 0; }
+  30% { transform: scale(1.15) rotate(-6deg); opacity: 1; }
+  100% { transform: scale(1) rotate(-8deg); opacity: 1; }
+}
+
+/* ----------------------------------------------------------- intro & end */
+
+.intro-overlay {
+  z-index: 21;
+}
+
+.intro-card {
+  width: min(94vw, 560px);
+  border-color: rgba(242, 182, 50, 0.4);
+}
+
+.intro-card .eyebrow,
+.solo-end .eyebrow {
+  color: var(--marigold);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  font-size: 11px;
+  margin: 0;
+}
+
+.intro-card,
+.solo-end .overlay-card {
+  text-align: left;
+}
+
+.intro-card p {
+  line-height: 1.55;
+}
+
+.intro-rules {
+  margin: 12px 0 18px;
+  padding-left: 18px;
+  display: grid;
+  gap: 6px;
+  font-size: 14px;
+  line-height: 1.4;
+  color: rgba(244, 240, 232, 0.85);
+}
+
+.solo-end {
+  z-index: 21;
+}
+
+.end-hacks-label {
+  margin: 0 0 6px !important;
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--marigold);
+}
+
+.end-hacks {
+  margin: 0 0 18px;
+  padding-left: 18px;
+  display: grid;
+  gap: 4px;
+  font-size: 13px;
+  color: rgba(244, 240, 232, 0.8);
+}
+
+/* ----------------------------------------------------------- touch */
+
+#use-button {
+  right: 104px;
+  bottom: 22px;
+}
+
+#combine-button {
+  right: 128px;
+  bottom: 212px;
+}
+
+#crouch-button {
+  right: 122px;
+  bottom: 110px;
+}
+
+.item-glyph {
+  font-size: 22px;
+  line-height: 1;
+}
+
+.crouch-icon {
+  width: 22px;
+  height: 14px;
+  border: 4px solid #ddd;
+  border-top: 0;
+  border-radius: 0 0 8px 8px;
+}
+
+/* On a keyboard there is no joystick; hide the touch arc. */
+@media (hover: hover) and (pointer: fine) {
+  .touch-controls .joystick,
+  .touch-controls .action-stack {
+    display: none;
+  }
+}
+
+@media (max-width: 760px), (max-height: 520px) {
+  .hud-doors {
+    display: none;
+  }
+
+  .hud-boss {
+    font-size: 11px;
+    padding: 6px 10px;
+  }
+
+  .hud-bag {
+    bottom: auto;
+    top: calc(max(16px, var(--safe-top)) + 104px);
+  }
+
+  .hud-slot {
+    width: 62px;
+    height: 44px;
+    font-size: 9.5px;
+  }
+
+  .hud-item-note {
+    display: none;
+  }
+
+  .hud-subtitle {
+    top: calc(max(16px, var(--safe-top)) + 196px);
+    font-size: 13.5px;
+  }
+
+  .hud-subtitle.shout {
+    font-size: 15px;
+  }
+
+  .solo-hint {
+    top: 40%;
+    bottom: auto;
+    font-size: 12.5px;
+  }
+
+  .solo-prompt {
+    bottom: calc(max(16px, var(--safe-bottom)) + 280px);
+    padding: 9px 14px;
+  }
+
+  #solo-prompt-label {
+    font-size: 13.5px;
+  }
+
+  .hud-eye,
+  .hud-seated {
+    top: calc(max(16px, var(--safe-top)) + 158px);
+  }
+}
+
+/* Once the shift is over (out under the shutter, or out of chances) the HUD
+   goes; only the cutscene and the card remain. */
+.solo-screen.ending .solo-hud {
+  display: none;
+}
+
+/* ------------------------------------------------------------- cutscenes */
+
+/* While a scene plays, only the subtitles survive from the HUD. */
+.solo-screen.cinematic .solo-hud > *:not(#hud-subtitle) {
+  display: none !important;
+}
+
+.solo-screen.cinematic .hud-subtitle {
+  top: auto;
+  bottom: calc(11vh + 18px);
+  z-index: 23;
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.cine {
+  position: absolute;
+  inset: 0;
+  z-index: 22;
+  pointer-events: none;
+}
+
+.cine-bar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 11vh;
+  background: #000;
+  animation: cine-in 700ms ease-out both;
+}
+
+.cine-bar.top { top: 0; }
+.cine-bar.bottom { bottom: 0; }
+
+@keyframes cine-in {
+  from { transform: scaleY(0); }
+}
+
+.cine-skip {
+  display: none;
+  position: absolute;
+  right: max(16px, var(--safe-right));
+  bottom: calc(max(12px, var(--safe-bottom)) + 2vh);
+  z-index: 24;
+  padding: 7px 14px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+}
+
+.solo-screen.cinematic .cine-skip {
+  display: block;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .cine-skip::after {
+    content: "  (E)";
+    opacity: 0.6;
+  }
+}
+
+/* Your thoughts, as opposed to anyone's speech. */
+.hud-subtitle.thought {
+  font-style: italic;
+  color: #cfe3ff;
+  border: 1px solid rgba(111, 195, 255, 0.35);
+}
+
+.title-flash {
+  position: absolute;
+  inset: 0;
+  z-index: 23;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 6px;
+  pointer-events: none;
+  text-align: center;
+  background: radial-gradient(ellipse 60% 40% at center, rgba(4, 8, 20, 0.82), rgba(4, 8, 20, 0.35) 70%, transparent);
+}
+
+.title-flash h1 {
+  margin: 0;
+  font-family: Georgia, "Times New Roman", serif;
+  font-weight: 500;
+  font-size: clamp(44px, 11vw, 96px);
+  color: #fff4d6;
+  text-shadow: 0 0 40px rgba(242, 182, 50, 0.6), 0 4px 18px rgba(0, 0, 0, 0.9);
+}
+
+.title-flash-eyebrow,
+.title-flash-tag {
+  margin: 0;
+  color: var(--marigold);
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  font-size: 12px;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.9);
+}
+
+.title-flash-tag {
+  letter-spacing: 0.12em;
+  text-transform: none;
+  font-size: 18px;
+  font-style: italic;
+}
+
+.title-flash.show {
+  animation: title-flash 3.2s ease both;
+}
+
+@keyframes title-flash {
+  0% { opacity: 0; transform: scale(0.94); }
+  15% { opacity: 1; transform: scale(1); }
+  80% { opacity: 1; }
+  100% { opacity: 0; transform: scale(1.03); }
+}
+
+/* Item icons, rendered from the 3D models. */
+.hud-slot {
+  height: 82px;
+  padding-top: 4px;
+  padding-bottom: 5px;
+  font-size: 10.5px;
+  display: grid;
+  justify-items: center;
+  align-content: end;
+  gap: 1px;
+}
+
+.hud-slot-icon {
+  width: 42px;
+  height: 42px;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.6));
+  pointer-events: none;
+}
+
+.hud-slot.empty {
+  align-content: center;
+}
+
+@media (max-width: 760px), (max-height: 520px) {
+  .hud-slot {
+    height: 60px;
+  }
+
+  .hud-slot-icon {
+    width: 32px;
+    height: 32px;
+  }
+}
+
+.title-flash-emblem {
+  width: 96px;
+  height: 96px;
+  margin-bottom: 4px;
+  filter: drop-shadow(0 8px 20px rgba(0, 0, 0, 0.6));
+}
+
+/* Hidden where the page cannot go full screen (iPhone Safari): there, Add to
+   Home Screen gives the same thing. */
+.js-fullscreen.unsupported {
+  display: none !important;
+}
+
+/* No joystick or buttons over a cutscene, or over the end card. */
+body.cinematic .touch-controls,
+.app:has(.solo-screen.ending) .touch-controls {
+  display: none;
+}
+
+/* ------------------------------------------------ phones held sideways */
+
+/* Short and wide: joystick bottom-left, buttons bottom-right, the bag
+   between them at the bottom, words stacked above it. */
+@media (max-height: 500px) and (orientation: landscape) {
+  .solo-top {
+    gap: 6px;
+  }
+
+  .solo-stat {
+    padding: 4px 8px;
+  }
+
+  .solo-stat strong {
+    font-size: 13px;
+  }
+
+  .hud-boss {
+    font-size: 11px;
+    padding: 5px 10px;
+  }
+
+  .hud-doors {
+    display: none;
+  }
+
+  .hud-bag {
+    top: auto;
+    bottom: max(8px, var(--safe-bottom));
+  }
+
+  .hud-slot {
+    width: 58px;
+    height: 54px;
+    font-size: 8.5px;
+  }
+
+  .hud-slot-icon {
+    width: 28px;
+    height: 28px;
+  }
+
+  .hud-item-note {
+    display: none;
+  }
+
+  .solo-prompt {
+    top: auto;
+    bottom: calc(max(8px, var(--safe-bottom)) + 66px);
+    padding: 6px 12px;
+    max-width: 46vw;
+  }
+
+  #solo-prompt-label {
+    font-size: 12.5px;
+  }
+
+  .solo-prompt-sub {
+    font-size: 10.5px;
+  }
+
+  .solo-hint {
+    top: auto;
+    bottom: calc(max(8px, var(--safe-bottom)) + 128px);
+    max-width: 50vw;
+    font-size: 11.5px;
+  }
+
+  .hud-subtitle {
+    top: 58px;
+    font-size: 12.5px;
+    max-width: 60vw;
+  }
+
+  .hud-subtitle.shout {
+    font-size: 13.5px;
+  }
+
+  .hud-eye,
+  .hud-seated {
+    top: 50px;
+  }
+
+  .hud-seated {
+    font-size: 10.5px;
+    padding: 4px 10px;
+  }
+
+  .action-stack {
+    transform: scale(0.72);
+    transform-origin: bottom right;
+  }
+
+  .joystick {
+    transform: scale(0.85);
+    transform-origin: bottom left;
+  }
+
+  .solo-screen.cinematic .hud-subtitle {
+    top: auto;
+    bottom: calc(11vh + 10px);
+  }
+
+  .cine-bar {
+    height: 9vh;
+  }
+}
+
+/* ------------------------------------------------------- turn sideways */
+
+.rotate-overlay {
+  display: none;
+}
+
+@media (hover: none) and (pointer: coarse) and (orientation: portrait) {
+  .rotate-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    display: grid;
+    place-content: center;
+    justify-items: center;
+    gap: 14px;
+    padding: 24px;
+    text-align: center;
+    background: radial-gradient(ellipse at 50% 40%, #173a80, #060b1c 75%);
+    color: #fff4d6;
+  }
+
+  .rotate-phone {
+    width: 88px;
+    height: 148px;
+    display: grid;
+    place-items: center;
+    border: 4px solid #fff4d6;
+    border-radius: 18px;
+    animation: rotate-phone 2.4s ease-in-out infinite;
+  }
+
+  .rotate-phone img {
+    width: 58px;
+    height: 58px;
+  }
+
+  .rotate-title {
+    margin: 10px 0 0;
+    font-family: Georgia, serif;
+    font-size: 24px;
+  }
+
+  .rotate-body {
+    margin: 0;
+    max-width: 280px;
+    font-size: 14px;
+    line-height: 1.5;
+    color: rgba(244, 240, 232, 0.75);
+  }
+
+  /* Nothing underneath needs to be reachable while this is up. */
+  .touch-controls,
+  .title-screen,
+  .solo-screen {
+    visibility: hidden;
+  }
+}
+
+@keyframes rotate-phone {
+  0%, 20% { transform: rotate(0deg); }
+  50%, 80% { transform: rotate(-90deg); }
+  100% { transform: rotate(0deg); }
+}

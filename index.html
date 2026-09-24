@@ -3,132 +3,211 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
-    <meta name="theme-color" content="#05070a" />
-    <meta name="description" content="Escape Room — find three fuse boxes in an endless yellow maze before the thing walking it finds you." />
+    <meta name="theme-color" content="#12306b" />
+    <meta name="description" content="Jugaad Escape — you have quit your bank job, but your manager has locked the staff in after hours. Improvise your way out with whatever the office has lying around, without getting caught." />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <title>Escape Room</title>
+    <title>Jugaad Escape</title>
     <link rel="icon" href="./assets/icon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="./assets/icon-180.png" />
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <meta property="og:title" content="Jugaad Escape" />
+    <meta property="og:description" content="Motu Sir has locked the bank. You quit today. A hairpin, a visiting card and a tiffin of achaar stand between you and the street. Kuch na kuch kar lenge." />
+    <meta property="og:image" content="/assets/og.jpg" />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
     <link rel="stylesheet" href="./src/styles.css" />
     <link rel="stylesheet" href="./src/title.css" />
+    <link rel="stylesheet" href="./src/bank.css" />
   </head>
   <body>
     <main id="app" class="app">
       <canvas id="game-canvas" class="world-canvas" aria-label="Game view"></canvas>
 
-      <!-- TITLE -->
+      <!-- TITLE: the real branch drifts by behind this. -->
       <section id="screen-title" class="screen title-screen">
-        <div class="title-card">
-          <p class="eyebrow">Solo horror</p>
-          <h1>Escape Room</h1>
-          <p class="muted">No players. No exit signs. Find three fuse boxes in an endless yellow maze
-            before the thing walking it finds you. Headphones on.</p>
-          <button id="title-start" class="primary-button">Enter</button>
-          <p id="title-best" class="muted small hidden"></p>
-          <p class="muted small title-keys">WASD move · Shift sprint · C crouch · Space jump · E use · F torch</p>
+        <div id="title-fade" class="title-fade" aria-hidden="true"></div>
+        <button class="icon-button title-fullscreen js-fullscreen" type="button" title="Full screen" aria-label="Full screen" aria-pressed="false">
+          <span class="fullscreen-icon"></span>
+        </button>
+        <div class="title-shade" aria-hidden="true"></div>
+
+        <div class="title-layout">
+          <header class="title-hero">
+            <p class="title-kicker">Bharatiya Jugaad Bank · Main Branch · 6:07 PM</p>
+            <h1 class="title-logo">
+              <img class="title-emblem" src="./assets/icon.svg" alt="" width="112" height="112" />
+              <span class="title-logo-words">
+                <span class="title-logo-hi">जुगाड़</span>
+                <span class="title-logo-en">Jugaad Escape</span>
+              </span>
+            </h1>
+            <p class="title-tagline">Kuch na kuch kar lenge.</p>
+
+            <div class="title-letter">
+              <div class="title-letter-paper">
+                <p class="title-letter-sub">Sub: <b>Resignation — with IMMEDIATE effect</b></p>
+                <p>Six years of "bas yeh last file hai, Sharma." Not one more. Notice period? Adjust it against my 43 pending leaves.</p>
+                <p class="title-letter-sign">— R. Sharma</p>
+              </div>
+              <span class="title-stamp">Notice period:<br />NAHI</span>
+            </div>
+
+            <p class="title-story">
+              One problem. At 6 PM <b>Motu Sir</b> pulled the shutter down, padlocked the gate and bolted the doors.
+              Nobody goes home till he says so. Forget the perfect tool — improvise your way out, and don't get caught.
+            </p>
+
+            <div class="title-actions">
+              <button id="title-start" class="title-start">Start the shift <span aria-hidden="true">▸</span></button>
+              <p id="title-best" class="title-best hidden"></p>
+            </div>
+          </header>
+
+          <aside class="title-side">
+            <section class="title-kit" aria-label="Your toolkit">
+              <p class="title-section-label">Your toolkit tonight</p>
+              <div id="title-kit" class="title-kit-grid"></div>
+              <p class="title-kit-note">Everyday office things. Every lock opens at least two ways.</p>
+            </section>
+
+            <ul class="title-rules">
+              <li><b>Your desk is safe.</b> Sitting there, you're just another clerk working late.</li>
+              <li><b>"Kaun hai?!"</b> Make a noise and you've got 10–15 seconds to get back in your chair.</li>
+              <li><b>Loo break = empty cabin.</b> Every other round, Sir's keys sit on his desk.</li>
+              <li><b>Five thappads</b> and it's the record room till midnight.</li>
+            </ul>
+          </aside>
         </div>
+
+        <p class="title-keys">WASD move · Shift run · C crouch · hold E search / use · 1–5 pick · F use item · G combine · Q drop</p>
       </section>
 
-      <!-- Shared touch controls (joystick and action buttons) -->
+      <!-- Touch controls (joystick and action buttons) -->
       <div id="touch-controls" class="touch-controls hidden">
         <div id="joystick" class="joystick" aria-label="Movement joystick">
-            <div class="joy-arrow up"></div>
-            <div class="joy-arrow right"></div>
-            <div class="joy-arrow down"></div>
-            <div class="joy-arrow left"></div>
-            <div id="joy-knob" class="joy-knob"></div>
-          </div>
+          <div class="joy-arrow up"></div>
+          <div class="joy-arrow right"></div>
+          <div class="joy-arrow down"></div>
+          <div class="joy-arrow left"></div>
+          <div id="joy-knob" class="joy-knob"></div>
+        </div>
 
-          <div class="action-stack">
-            <button id="killbook-button" class="action-button killbook hidden" aria-label="Killbook">
-              <span class="note-icon"></span>
-              <span>Killbook</span>
-            </button>
-            <button id="interact-button" class="action-button" aria-label="Interact">
-              <span class="hand-icon"></span>
-              <span id="interact-label">Interact</span>
-            </button>
-            <button id="run-button" class="action-button" aria-label="Toggle running" aria-pressed="false">
-              <span class="run-icon"></span>
-              <span>Run</span>
-            </button>
-            <button id="crouch-button" class="action-button small" aria-label="Toggle crouch" aria-pressed="false">
-              <span class="crouch-icon"></span>
-              <span>Crouch</span>
-            </button>
-            <button id="jump-button" class="action-button small" aria-label="Jump">
-              <span class="jump-icon"></span>
-              <span>Jump</span>
-            </button>
-          </div>
+        <div class="action-stack">
+          <button id="interact-button" class="action-button" aria-label="Use (hold)">
+            <span class="hand-icon"></span>
+            <span id="interact-label">Use</span>
+          </button>
+          <button id="run-button" class="action-button small" aria-label="Toggle running" aria-pressed="false">
+            <span class="run-icon"></span>
+            <span>Run</span>
+          </button>
+          <button id="crouch-button" class="action-button" aria-label="Toggle crouch" aria-pressed="false">
+            <span class="crouch-icon"></span>
+            <span>Crouch</span>
+          </button>
+          <button id="use-button" class="action-button small" aria-label="Use selected item">
+            <span class="item-glyph">✦</span>
+            <span>Item</span>
+          </button>
+          <button id="combine-button" class="action-button small" aria-label="Combine items">
+            <span class="item-glyph">＋</span>
+            <span>Combine</span>
+          </button>
+        </div>
       </div>
 
-
-      <!-- SOLO: ESCAPE ROOM -->
+      <!-- THE BANK -->
       <section id="screen-solo" class="screen solo-screen hidden">
-        <div id="solo-vignette" class="solo-vignette" aria-hidden="true"></div>
         <div id="solo-flash" class="solo-flash" aria-hidden="true"></div>
-        <div id="solo-face" class="solo-face" aria-hidden="true"></div>
-        <div id="solo-strobe" class="solo-strobe" aria-hidden="true"></div>
-        <div id="solo-blood" class="solo-blood" aria-hidden="true"></div>
-        <div id="solo-eyes" class="solo-eyes" aria-hidden="true"><i class="lid top"></i><i class="lid bottom"></i></div>
         <div id="solo-fade" class="solo-fade" aria-hidden="true"></div>
+        <div id="thappad" class="thappad hidden" aria-hidden="true">THAPPAD!</div>
 
         <div id="solo-hud" class="solo-hud">
           <div class="solo-top">
             <div class="solo-stat">
-              <span class="solo-stat-label">Fuses</span>
-              <strong id="solo-fuses">0 / 3</strong>
+              <span class="solo-stat-label">Clock</span>
+              <strong id="hud-clock">6:00 PM</strong>
             </div>
             <div class="solo-stat">
-              <span class="solo-stat-label">Lives</span>
-              <span id="solo-lives" class="solo-lives"></span>
+              <span class="solo-stat-label">Chances</span>
+              <span id="hud-attempts" class="hud-attempts"></span>
             </div>
-            <div class="solo-stat">
-              <span class="solo-stat-label">Time</span>
-              <strong id="solo-timer">00:00</strong>
-            </div>
-            <div id="solo-compass" class="solo-compass dead" aria-label="Compass">
-              <div class="solo-compass-dial"><div id="solo-arrow" class="solo-arrow"></div></div>
-              <span id="solo-compass-label">NO SIGNAL</span>
+            <div id="hud-boss" class="hud-boss calm" aria-live="polite">
+              <span class="hud-boss-face" aria-hidden="true"></span>
+              <span id="hud-boss-text">Sir in his cabin</span>
             </div>
             <div class="solo-top-actions">
-              <button id="solo-torch" class="icon-button active" title="Toggle torch" aria-label="Toggle torch" aria-pressed="true">
-                <span class="torch-icon"></span>
+              <button class="icon-button js-fullscreen" type="button" title="Full screen" aria-label="Full screen" aria-pressed="false">
+                <span class="fullscreen-icon"></span>
               </button>
-              <button id="solo-leave" class="icon-button leave" title="Leave" aria-label="Leave the Lobby">
+              <button id="solo-leave" class="icon-button leave" title="Leave" aria-label="Quit to title">
                 <span class="leave-icon"></span>
               </button>
             </div>
           </div>
 
-          <div id="solo-stamina" class="solo-stamina"><div id="solo-stamina-fill" class="solo-stamina-fill"></div></div>
-          <span id="solo-seed" class="solo-seed">SEED</span>
+          <ul id="hud-doors" class="hud-doors" aria-label="Doors"></ul>
+
+          <div id="hud-eye" class="hud-eye" aria-hidden="true">
+            <span class="hud-eye-label">Sir is watching</span>
+            <div class="hud-eye-track"><div id="hud-eye-fill"></div></div>
+          </div>
+
+          <div id="hud-seated" class="hud-seated">At your desk, looking busy — safe from Sir.</div>
 
           <div id="solo-prompt" class="solo-prompt hidden">
-            <span id="solo-prompt-label">Pull the fuse</span>
+            <span id="solo-prompt-label"></span>
+            <span id="solo-prompt-sub" class="solo-prompt-sub"></span>
             <div class="hold-track"><div id="solo-hold-fill"></div></div>
           </div>
 
-          <p id="solo-run-banner" class="solo-run-banner hidden">RUN TOWARDS THE EXIT DOOR</p>
-          <p id="solo-hint" class="solo-hint">Find three fuse boxes. Something else is in here with you.</p>
+          <p id="hud-subtitle" class="hud-subtitle hidden"></p>
+          <p id="solo-hint" class="solo-hint faded"></p>
+          <div id="hud-noise" class="hud-noise"></div>
+
+          <div class="hud-bag">
+            <p id="hud-item-note" class="hud-item-note"></p>
+            <div id="hud-inventory" class="hud-inventory"></div>
+          </div>
           <div class="crosshair" aria-hidden="true"></div>
+        </div>
+
+        <!-- Cutscenes: letterbox bars, a way to skip, and the title card. -->
+        <div id="cine" class="cine hidden" aria-hidden="true">
+          <div class="cine-bar top"></div>
+          <div class="cine-bar bottom"></div>
+        </div>
+        <button id="cine-skip" class="cine-skip" type="button">Skip ▸</button>
+        <div id="title-flash" class="title-flash hidden" aria-hidden="true">
+          <img class="title-flash-emblem" src="./assets/icon.svg" alt="" width="96" height="96" />
+          <p class="title-flash-eyebrow">Bharatiya Jugaad Bank presents</p>
+          <h1>Jugaad Escape</h1>
+          <p class="title-flash-tag">Kuch na kuch kar lenge.</p>
         </div>
 
         <div id="solo-end" class="overlay solo-end hidden">
           <div class="overlay-card">
-            <p class="eyebrow">Escape Room</p>
-            <h2 id="solo-end-title">It found you</h2>
+            <p id="solo-end-eyebrow" class="eyebrow">Jugaad Escape</p>
+            <h2 id="solo-end-title">Ghar pahunch gaye!</h2>
             <p id="solo-end-body" class="muted"></p>
             <ul id="solo-end-stats" class="solo-stats"></ul>
+            <p id="solo-end-hacks-label" class="end-hacks-label">Your jugaad</p>
+            <ul id="solo-end-hacks" class="end-hacks"></ul>
             <div class="row">
-              <button id="solo-retry" class="primary-button">Run again</button>
+              <button id="solo-retry" class="primary-button">Try again</button>
               <button id="solo-quit" class="secondary-button">Back to title</button>
             </div>
           </div>
         </div>
       </section>
+      <!-- Phones play sideways. Shown over everything while held upright. -->
+      <div id="rotate" class="rotate-overlay" role="alert">
+        <div class="rotate-phone" aria-hidden="true"><img src="./assets/icon.svg" alt="" /></div>
+        <p class="rotate-title">Turn your phone sideways</p>
+        <p class="rotate-body">Jugaad Escape plays in landscape. Motu Sir will wait — the game is paused.</p>
+      </div>
     </main>
 
     <script type="importmap">

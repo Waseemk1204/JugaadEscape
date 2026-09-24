@@ -1,9 +1,9 @@
 {
-  "name": "escape-room",
+  "name": "jugaad-escape",
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "Escape Room — a solo first-person horror run through an endless yellow maze. Split out of Killbook 2D's solo mode.",
+  "description": "Jugaad Escape \u2014 a comic first-person stealth game: your bank manager has locked the staff in after hours; improvise your way out with everyday office items.",
   "engines": {
     "node": ">=20"
   },

@@ -1,17 +1,18 @@
-// The way out of The Lobby, seen through your own eyes.
+// The way out of the bank, seen through your own eyes.
 //
-// You come through the exit door at a flat-out run and keep going: out into a
-// wet street at night, towards the lights of the city. A few seconds in you
-// look back over your shoulder, and it is standing in the doorway you came
-// out of, lit yellow from behind, watching — it does not follow. You turn
-// forward again and run until everything fades.
+// You crawl out under the half-raised shutter and keep going: out into the
+// street at night, towards the lights of the city. A second in you look back
+// over your shoulder, and Motu Sir is standing under the shutter, lit by the
+// tube lights behind him, shaking his fist and shouting about 9 AM sharp. He
+// does not follow — he would have to crouch.
 //
-// Its own small scene, drawn with the solo renderer and its own camera; the
+// Its own small scene, drawn with the game's renderer and its own camera; the
 // player never gets control back. Everything is in metres. The street runs
-// down -z, the door is at z = 0.
+// down -z, the shutter is at z = 0.
 
 import * as THREE from "three";
-import { Monster } from "./monster.js";
+import { Boss } from "./boss.js";
+import { signTexture } from "./bank.js";
 
 export const ESCAPE = {
   LENGTH: 10.5, // seconds, fade included
@@ -99,8 +100,8 @@ export class EscapeScene {
       scene.add(dash);
     }
 
-    // Behind you: the building you came out of. A blank wall, and the door
-    // with that yellow light pouring out of it.
+    // Behind you: the branch. A blank wall, the shutter half up, and tube
+    // light pouring out under it.
     const wallMat = std(0x3a3632);
     const wallLeft = new THREE.Mesh(this.own(new THREE.BoxGeometry(14, 9, 0.6)), wallMat);
     wallLeft.position.set(-7.6, 4.5, 0.3);
@@ -109,22 +110,24 @@ export class EscapeScene {
     const lintel = new THREE.Mesh(this.own(new THREE.BoxGeometry(1.2, 6.6, 0.6)), wallMat);
     lintel.position.set(0, 2.4 + 3.3, 0.3);
     scene.add(wallLeft, wallRight, lintel);
-    // Inside: the Lobby's sick yellow, bright through the opening.
-    const inside = new THREE.Mesh(this.own(new THREE.PlaneGeometry(1.2, 2.4)), this.own(new THREE.MeshBasicMaterial({ color: 0xd9c77a, toneMapped: false })));
+    // Inside: cold tube light, bright through the opening.
+    const inside = new THREE.Mesh(this.own(new THREE.PlaneGeometry(1.2, 2.4)), this.own(new THREE.MeshBasicMaterial({ color: 0xe8f0f4, toneMapped: false })));
     inside.position.set(0, 1.2, 1.4);
     inside.rotation.y = Math.PI;
     scene.add(inside);
-    const spill = new THREE.SpotLight(0xe8d27a, 40, 16, 0.55, 0.6, 1.3);
+    const spill = new THREE.SpotLight(0xeef4ff, 40, 16, 0.55, 0.6, 1.3);
     spill.position.set(0, 2.1, 1.2);
     spill.target.position.set(0, 0, -6);
     scene.add(spill, spill.target);
-    // The door itself, swung wide against the wall.
-    const leaf = new THREE.Mesh(this.own(new THREE.BoxGeometry(1.1, 2.3, 0.07)), std(0x5a5a58, { metalness: 0.5, roughness: 0.5 }));
-    leaf.position.set(-0.62, 1.15, -0.55);
-    leaf.rotation.y = Math.PI / 2;
-    scene.add(leaf);
-    const sign = new THREE.Mesh(this.own(new THREE.BoxGeometry(0.7, 0.24, 0.05)), this.own(new THREE.MeshBasicMaterial({ color: 0x3dff72, toneMapped: false })));
-    sign.position.set(0, 2.65, -0.05);
+    // The shutter, rolled half way up over the opening.
+    const shutter = new THREE.Mesh(this.own(new THREE.BoxGeometry(1.3, 0.45, 0.06)), std(0x6c7a73, { metalness: 0.4, roughness: 0.6 }));
+    shutter.position.set(0, 2.2, -0.05);
+    scene.add(shutter);
+    // And the bank's board over it.
+    const board = this.own(signTexture(1024, 160, "#12306b", [["भारतीय जुगाड़ बैंक", 58, "#ffffff"], ["BHARATIYA JUGAAD BANK", 40, "#f2c14e"]]));
+    const sign = new THREE.Mesh(this.own(new THREE.PlaneGeometry(6, 0.95)), this.own(new THREE.MeshBasicMaterial({ map: board, toneMapped: false })));
+    sign.position.set(0, 3.5, -0.02);
+    sign.rotation.y = Math.PI;
     scene.add(sign);
 
     // The city: blocks either side of the street, towers further off.
@@ -194,23 +197,13 @@ export class EscapeScene {
     }
     scene.add(new THREE.HemisphereLight(0x3a4a70, 0x0c0c10, 0.6));
 
-    // It, in the doorway. Reared up to its full height, facing the street,
-    // its body trailing back into the Lobby. It does not come out.
-    // A cold light from the street catches its face; the rest is silhouette.
+    // Motu Sir, under the shutter, facing the street. He does not come out.
     const catchLight = new THREE.PointLight(0xb8c8ff, 6, 5, 1.6);
     catchLight.position.set(0.3, 1.9, -1.8);
     scene.add(catchLight);
-    this.monster = new Monster(scene);
-    this.monster.setVisible(true);
-    this.monsterAt = { x: 0, z: 0.35 };
-    this.monster.place(this.monsterAt.x * 32, this.monsterAt.z * 32, -Math.PI / 2);
-    // Posed once and never again: it stands in the doorway perfectly still.
-    // No twitch, no sway, no breath — only watching.
-    for (let i = 0; i < 90; i += 1) {
-      this.monster.update({ x: this.monsterAt.x * 32, y: this.monsterAt.z * 32, angle: -Math.PI / 2, charging: true, dt: 1 / 30, time: 0, intensity: 0 });
-    }
-    this.monster.head.rotation.set(0, 0, 0, "YXZ");
-    for (const { mesh } of this.monster.hairStrands) mesh.rotation.set(0, 0, 0);
+    this.boss = new Boss(scene);
+    this.boss.setMark(null);
+    this.bossAt = { x: 0, z: 0.35 };
   }
 
   resize(width, height) {
@@ -260,6 +253,18 @@ export class EscapeScene {
       this.camera.updateProjectionMatrix();
     }
     this.stride = stride;
+
+    // Shaking his fist: the wind-up of a slap, over and over.
+    this.boss.update({
+      x: this.bossAt.x * 32,
+      y: this.bossAt.z * 32,
+      angle: -Math.PI / 2,
+      pose: "slap",
+      slap: 0.25 + Math.abs(Math.sin(t * 5)) * 0.3,
+      dt,
+      time: t,
+      angry: true,
+    });
   }
 
   get looking() {
@@ -275,7 +280,7 @@ export class EscapeScene {
   }
 
   dispose() {
-    this.monster.dispose();
+    this.boss.dispose();
     this.scene.traverse((object) => {
       if (object.isMesh) object.geometry?.dispose?.();
     });

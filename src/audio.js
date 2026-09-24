@@ -38,7 +38,7 @@ export class GameAudio {
     if (this.master) this.master.gain.setTargetAtTime(enabled ? 1 : 0, this.ctx.currentTime, 0.05);
   }
 
-  tone({ freq = 440, type = "sine", duration = 0.2, gain = 0.3, attack = 0.005, decay, detune = 0, slideTo, delay = 0 }) {
+  tone({ freq = 440, type = "sine", duration = 0.2, gain = 0.3, attack = 0.005, decay, detune = 0, slideTo, delay = 0, out = null }) {
     if (!this.ctx || !this.enabled) return;
     const ctx = this.ctx;
     const start = ctx.currentTime + delay;
@@ -52,12 +52,12 @@ export class GameAudio {
     amp.gain.exponentialRampToValueAtTime(gain, start + attack);
     amp.gain.exponentialRampToValueAtTime(0.0001, start + (decay || duration));
     osc.connect(amp);
-    amp.connect(this.master);
+    amp.connect(out || this.master);
     osc.start(start);
     osc.stop(start + (decay || duration) + 0.05);
   }
 
-  noise({ duration = 0.3, gain = 0.2, delay = 0, filter = 1200 }) {
+  noise({ duration = 0.3, gain = 0.2, delay = 0, filter = 1200, out = null, type = "lowpass" }) {
     if (!this.ctx || !this.enabled) return;
     const ctx = this.ctx;
     const start = ctx.currentTime + delay;
@@ -67,13 +67,13 @@ export class GameAudio {
     const source = ctx.createBufferSource();
     source.buffer = buffer;
     const lp = ctx.createBiquadFilter();
-    lp.type = "lowpass";
+    lp.type = type;
     lp.frequency.value = filter;
     const amp = ctx.createGain();
     amp.gain.value = gain;
     source.connect(lp);
     lp.connect(amp);
-    amp.connect(this.master);
+    amp.connect(out || this.master);
     source.start(start);
   }
 
