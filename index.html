@@ -76,7 +76,7 @@
               <li><b>Your desk is safe.</b> Sitting there, you're just another clerk working late.</li>
               <li><b>"Kaun hai?!"</b> Make a noise and you've got 10–15 seconds to get back in your chair.</li>
               <li><b>Loo break = empty cabin.</b> Every other round, Sir's keys sit on his desk.</li>
-              <li><b>Five thappads</b> and it's the record room till midnight.</li>
+              <li><b>Three thappads</b> and it's the record room till midnight.</li>
             </ul>
           </aside>
         </div>
@@ -142,7 +142,10 @@
               <button class="icon-button js-fullscreen" type="button" title="Full screen" aria-label="Full screen" aria-pressed="false">
                 <span class="fullscreen-icon"></span>
               </button>
-              <button id="solo-leave" class="icon-button leave" title="Leave" aria-label="Quit to title">
+              <button id="solo-pause" class="icon-button" type="button" title="Pause (Esc)" aria-label="Pause">
+                <span class="pause-icon"></span>
+              </button>
+              <button id="solo-leave" class="icon-button leave" title="Leave" aria-label="Leave to title">
                 <span class="leave-icon"></span>
               </button>
             </div>
@@ -185,6 +188,41 @@
           <p class="title-flash-eyebrow">Bharatiya Jugaad Bank presents</p>
           <h1>Jugaad Escape</h1>
           <p class="title-flash-tag">Kuch na kuch kar lenge.</p>
+        </div>
+
+        <!-- The ending's phone: a chat with Motu Sir, and the block button. -->
+        <div id="end-phone" class="end-phone hidden" aria-hidden="true">
+          <div class="phone-frame">
+            <div class="phone-notch"></div>
+            <div class="phone-top">
+              <span class="phone-back">‹</span>
+              <span class="phone-avatar">MS</span>
+              <div class="phone-who"><b>Motu Sir (Boss)</b><small id="end-phone-status">online</small></div>
+              <span class="phone-dots">⋮</span>
+            </div>
+            <div id="end-phone-chat" class="phone-chat"></div>
+            <div class="phone-input"><span id="end-phone-input"></span><i class="phone-send">➤</i></div>
+            <div id="end-phone-dialog" class="phone-dialog hidden">
+              <p><b>Block Motu Sir?</b></p>
+              <p class="phone-dialog-sub">Blocked contacts will no longer be able to call you or send you messages.</p>
+              <div class="phone-dialog-buttons"><span>Cancel</span><span id="end-phone-block" class="phone-block">Block</span></div>
+            </div>
+            <div id="end-phone-toast" class="phone-toast hidden">You blocked Motu Sir</div>
+          </div>
+        </div>
+
+        <!-- Pause, and "are you sure?" before leaving or starting over. -->
+        <div id="pause" class="overlay pause-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="pause-title">
+          <div class="overlay-card pause-card">
+            <p id="pause-eyebrow" class="eyebrow">Chai break</p>
+            <h2 id="pause-title">Paused</h2>
+            <p id="pause-body" class="muted">Motu Sir is frozen mid-sip. Take your time.</p>
+            <div class="pause-actions">
+              <button id="pause-primary" class="primary-button" type="button">Resume</button>
+              <button id="pause-restart" class="secondary-button" type="button">Restart the shift</button>
+              <button id="pause-leave" class="secondary-button danger" type="button">Leave to title</button>
+            </div>
+          </div>
         </div>
 
         <div id="solo-end" class="overlay solo-end hidden">

@@ -114,3 +114,15 @@ test("his keys are only on the desk while he is in the washroom", () => {
   run(brain, 0.1);
   assert.equal(brain.away, true);
 });
+
+test("the loud jugaads at the front doors are heard from his chair", () => {
+  // Smashing a padlock, sliding the dry gate, heaving the dry shutter.
+  for (const [x, y, loudness] of [[16.9, 4.5, 1], [16.9, 4.5, 0.85], [16.9, 0.55, 1], [13.8, 0.55, 1]]) {
+    const brain = new BossBrain(new BankMap(), seeded(8));
+    assert.ok(brain.hearNoise(x * TILE, y * TILE, loudness), `did not hear ${loudness} at ${x},${y}`);
+    assert.equal(brain.mode, "alerted");
+  }
+  // Quietly opening the wooden doors is not.
+  const brain = new BossBrain(new BankMap(), seeded(8));
+  assert.equal(brain.hearNoise(16.9 * TILE, 7.5 * TILE, 0.22), false);
+});

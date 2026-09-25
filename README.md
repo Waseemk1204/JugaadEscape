@@ -24,8 +24,11 @@ lying around — without him catching you.
   your desk; an empty chair starts a search.
 - **Getting seen fills a meter**, slowly while he is busy, fast when he is
   looking for you. Crouch behind desks to break it. If it fills: THAPPAD, back
-  to your desk, and whatever you were holding goes into his almirah. Five
-  slaps and it is overtime till midnight.
+  to your desk, and whatever you were holding goes into his almirah. Three
+  slaps and it is the record room till midnight.
+- **Use what's in your hand.** Pick the tool (1–5, or tap a slot) before you
+  hold E on a lock; the prompt tells you which slot has something that fits.
+  Esc pauses; leaving or restarting asks first.
 - **Forget the perfect tool.** Items have properties, not jobs, and every lock
   step can be done at least two ways (the tests hold every seed to this):
 
@@ -42,6 +45,8 @@ lying around — without him catching you.
   set an alarm on your phone and leave it somewhere, flick an eraser with a
   ruler-and-rubber-band gulel, or ring his extension from the enquiry desk to
   keep him stuck on the phone.
+- **Get out** and it's an auto home, the tie off, a message to Motu Sir that
+  the resignation is on his desk — and the block button.
 - **Score:** the end card lists every jugaad you used and gives a Jugaad Score
   and a title — improvised answers beat keys, keys beat brute force.
 
@@ -94,7 +99,8 @@ src/input.js            keyboard, joystick, touch buttons, mouse look
 src/three/bank.js       the branch in 3D, built from the floor plan
 src/three/boss.js       Motu Sir's model and poses
 src/three/doors.js      the wooden doors, gate and shutter, animated
-src/three/escape.js     the ending: out under the shutter into the street
+src/three/ending.js     the ending: the street, the auto, home, blocking Sir
+src/toolmotion.js       how each tool moves while you use it
 shared/bank-map.js      the floor plan, collision, sight lines, path finding
 shared/boss-ai.js       Sir's routine, eyes and ears (pure, testable)
 shared/jugaad.js        items, containers, door steps, recipes, scoring

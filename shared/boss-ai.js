@@ -51,7 +51,8 @@ export const BOSS = {
   NOTICE_AT: 0.3, // meter level where he stops and stares
   TOO_CLOSE: 1.7 * M, // at this range he notices you whichever way he faces
   // Ears
-  HEAR: 22 * M, // how far a noise of loudness 1 carries
+  HEAR: 30 * M, // how far a noise of loudness 1 carries
+  WALL_MUFFLE: 0.8, // through walls and doors a noise carries this much as far
 };
 
 const WALKING_MODES = new Set(["round", "washroom", "investigate", "search", "return"]);
@@ -179,9 +180,10 @@ export class BossBrain {
     if (this.mode === "confront" || loudness <= 0) return false;
     const distance = Math.hypot(x - this.x, y - this.y);
     const clear = this.map.hasLineOfSight(this.x, this.y, x, y);
-    // Walls muffle, but a bank is not a big building.
-    const reach = loudness * BOSS.HEAR * (clear ? 1 : 0.7);
-    if (distance > reach) return false;
+    // Walls muffle, but a bank is not a big building — and a padlock being
+    // smashed or a dry shutter going up is heard from anywhere in it.
+    const reach = loudness * BOSS.HEAR * (clear ? 1 : BOSS.WALL_MUFFLE);
+    if (distance > reach && loudness < 0.95) return false;
     this.noise = { x, y };
     const loud = loudness >= 0.95;
 

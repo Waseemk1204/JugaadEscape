@@ -29,7 +29,7 @@ export class BankAudio {
     const out = ctx.createGain();
     out.gain.value = 0;
     out.gain.setTargetAtTime(1, ctx.currentTime, 0.8);
-    out.connect(this.audio.master);
+    out.connect(this.bus);
     this.bed = out;
 
     // Fans: filtered noise with a slow wobble.
@@ -72,31 +72,27 @@ export class BankAudio {
     hum.start();
 
     this.loops.push(fan, wobble, hum);
-
-    // Now and then, the city outside: a horn, a pressure-horn truck, a dog.
-    this.cityTimer = setInterval(() => this.cityNoise(), 7000);
   }
 
-  cityNoise() {
-    if (!this.running || Math.random() < 0.35) return;
-    const a = this.audio;
-    const kind = Math.random();
-    if (kind < 0.5) {
-      // Two-tone car horn, far off.
-      a.tone({ freq: 420, type: "square", duration: 0.22, gain: 0.012 });
-      a.tone({ freq: 530, type: "square", duration: 0.22, gain: 0.01, delay: 0.01 });
-    } else if (kind < 0.8) {
-      // A truck's musical pressure horn.
-      [523, 659, 784, 659].forEach((f, i) => a.tone({ freq: f, type: "square", duration: 0.16, gain: 0.008, delay: i * 0.17 }));
-    } else {
-      // Scooter going past.
-      a.tone({ freq: 90, type: "sawtooth", duration: 1.6, gain: 0.012, slideTo: 140 });
+  // Every sound that happens *in the office* goes through this one channel,
+  // so leaving the building silences all of it at once — including anything
+  // already scheduled, like a photocopier halfway through its fifty copies.
+  get bus() {
+    if (!this.busNode && this.ctx) {
+      this.busNode = this.ctx.createGain();
+      this.busNode.connect(this.audio.master);
     }
+    return this.busNode;
   }
 
   stop() {
     this.running = false;
-    clearInterval(this.cityTimer);
+    if (this.busNode) {
+      const bus = this.busNode;
+      this.busNode = null;
+      bus.gain.setTargetAtTime(0, this.ctx.currentTime, 0.08);
+      setTimeout(() => bus.disconnect(), 600);
+    }
     for (const node of this.loops) {
       try {
         node.stop();
@@ -135,7 +131,7 @@ export class BankAudio {
     const amp = ctx.createGain();
     amp.gain.value = gain;
     amp.connect(panner);
-    panner.connect(this.audio.master);
+    panner.connect(this.bus);
     // Let the nodes go once the sound has played.
     setTimeout(() => {
       amp.disconnect();

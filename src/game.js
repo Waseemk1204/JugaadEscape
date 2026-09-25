@@ -9,7 +9,7 @@
 // loo — get up, search drawers and almirahs for everyday office things, bend
 // them into tools, and work on the three doors between you and the street.
 // Make noise and he comes out: "Kaun hai?!", then 10–15 seconds to get back in
-// your chair. Get caught and he slaps you back to your desk. Five slaps and
+// your chair. Get caught and he slaps you back to your desk. Three slaps and
 // you are here till midnight.
 //
 // This file is the glue: movement, the camera, the HUD, and turning the
@@ -27,7 +27,7 @@ import { BankWorld } from "./three/bank.js";
 import { Boss } from "./three/boss.js";
 import { DoorVisuals } from "./three/doors.js";
 import { BankAudio } from "./bankaudio.js";
-import { EscapeScene, ESCAPE } from "./three/escape.js";
+import { EndingScene } from "./three/ending.js";
 import { IntroScene, LockupScene } from "./cutscenes.js";
 import { floorModel, heldModel, itemIcon } from "./three/items.js";
 import { WORK_HEIGHT, motionKind, TOOL_KINDS, toolPose, bodyMotion } from "./toolmotion.js";
@@ -37,7 +37,7 @@ const HAND_REST = [0.21, -0.2, -0.42];
 
 const EYE = { STAND: 1.6, CROUCH: 0.98, SEATED: 1.18 };
 const SPEED = { WALK: 100, RUN: 150, CROUCH: 52 };
-const ATTEMPTS = 5;
+const ATTEMPTS = 3;
 const REACH = 1.7 * 32; // map pixels you can reach from where you stand
 const START_MINUTES = 18 * 60; // 6:00 PM
 const GAME_MINUTES_PER_SECOND = 1 / 6; // the wall clock runs ten times fast
@@ -70,7 +70,6 @@ const TAG_WORDS = {
 };
 
 const ESCAPE_FADE_OUT_S = 0.7;
-const ESCAPE_FADE_IN_S = 0.9;
 
 const $ = (id) => document.querySelector(id);
 
@@ -129,13 +128,40 @@ export class JugaadGame {
       retry: $("#solo-retry"),
       quit: $("#solo-quit"),
       leave: $("#solo-leave"),
+      pauseButton: $("#solo-pause"),
+      pause: $("#pause"),
+      pauseCard: $("#pause .pause-card"),
+      pauseEyebrow: $("#pause-eyebrow"),
+      pauseTitle: $("#pause-title"),
+      pauseBody: $("#pause-body"),
+      pausePrimary: $("#pause-primary"),
+      pauseRestart: $("#pause-restart"),
+      pauseLeave: $("#pause-leave"),
       useButton: $("#use-button"),
       combineButton: $("#combine-button"),
       interactLabel: $("#interact-label"),
     };
     this.el.retry.addEventListener("click", () => this.restart());
     this.el.quit.addEventListener("click", () => this.quit());
-    this.el.leave.addEventListener("click", () => this.quit());
+    // Leaving (or starting over) throws the shift away, so it asks first.
+    this.el.leave.addEventListener("click", () => this.pause("leave"));
+    this.el.pauseButton.addEventListener("click", () => this.pause("pause"));
+    this.el.pausePrimary.addEventListener("click", () => {
+      if (this.pauseMode === "pause") this.resume();
+      else this.pause("pause");
+    });
+    this.el.pauseRestart.addEventListener("click", () => {
+      if (this.pauseMode === "restart") this.restart();
+      else this.pause("restart");
+    });
+    this.el.pauseLeave.addEventListener("click", () => {
+      if (this.pauseMode === "leave") this.quit();
+      else this.pause("leave");
+    });
+    // Switching tabs or apps pauses the shift.
+    document.addEventListener("visibilitychange", () => {
+      if (document.hidden && this.active && !this.runOver && !this.userPaused) this.pause("pause");
+    });
     this.el.cineSkip.addEventListener("click", () => this.cinematic?.skip());
     this.el.useButton?.addEventListener("pointerdown", (e) => {
       e.preventDefault();
@@ -221,7 +247,6 @@ export class JugaadGame {
     this.runOver = null;
     this.escaped = false;
     this.escapeFade = null;
-    this.cutscene = null;
     this.cardShown = false;
     this.paused = true; // until the intro is dismissed
     this.hintsShown = new Set();
@@ -282,7 +307,7 @@ export class JugaadGame {
     this.titleTimer = setTimeout(() => el.classList.add("hidden"), 3200);
   }
 
-  // The fifth slap does not send you back to your desk. He has somewhere
+  // The last slap does not send you back to your desk. He has somewhere
   // else in mind.
   startLockup() {
     this.runOver = true;
@@ -362,10 +387,12 @@ export class JugaadGame {
 
   onKey(key) {
     if (!this.active) return false;
-    if (key === "escape" && !this.runOver) {
-      this.quit();
+    if ((key === "escape" || key === "p") && !this.runOver) {
+      if (this.userPaused) this.resume();
+      else this.pause("pause");
       return true;
     }
+    if (this.userPaused) return true;
     if (this.cinematic) {
       if (key === "enter" || key === "e" || key === " ") this.cinematic.skip();
       return true;
@@ -402,7 +429,7 @@ export class JugaadGame {
       this.handCam.aspect = this.camera.aspect;
       this.handCam.updateProjectionMatrix();
     }
-    this.cutscene?.resize(this.width, this.height);
+    this.cinematic?.resize?.(this.width, this.height);
   }
 
   // Hold the frame rate by trading resolution, not smoothness.
@@ -434,21 +461,22 @@ export class JugaadGame {
     const now = time / 1000;
     this.adaptResolution(dt);
 
-    // Out under the shutter: fade to black, then the street.
-    if (this.escapeFade !== null && !this.cutscene) {
+    // Out under the shutter: fade to black, then the ending (the street, the
+    // auto, home — see three/ending.js).
+    if (this.escapeFade !== null && !this.cinematic) {
       this.escapeFade = Math.min(1, this.escapeFade + dt / ESCAPE_FADE_OUT_S);
       this.el.fade.style.opacity = String(this.escapeFade);
       if (this.escapeFade >= 1) {
         this.escapeFade = null;
-        this.cutscene = new EscapeScene(this.renderer, { width: this.width, height: this.height });
-        this.sound.escaped();
+        this.startCinematic(new EndingScene(this));
       } else {
         this.renderWorld(dt, now);
       }
       return;
     }
-    if (this.cutscene) {
-      this.updateEscape(dt);
+    // Paused: the picture holds, nothing moves.
+    if (this.userPaused) {
+      if (!this.cinematic?.ownsRender) this.renderWorld(0, now);
       return;
     }
     // A phone held upright: everything waits (see main.js).
@@ -457,8 +485,10 @@ export class JugaadGame {
       return;
     }
     if (this.cinematic) {
-      this.cinematic.update(dt, now);
-      this.renderWorld(dt, now);
+      const scene = this.cinematic;
+      scene.update(dt, now);
+      // The ending draws its own world; the others are staged in the bank.
+      if (!scene.ownsRender) this.renderWorld(dt, now);
       return;
     }
     if (this.runOver && this.cardShown) {
@@ -707,7 +737,8 @@ export class JugaadGame {
     }
 
     // A pulse that quickens as he twigs.
-    if (result.meter > 0.04 && !this.player.seated) {
+    // Only while he is actually looking at you — not as the meter drains.
+    if (result.seen && result.meter > 0.04 && !this.player.seated) {
       this.pulseTimer -= dt;
       if (this.pulseTimer <= 0) {
         this.pulseTimer = 0.95 - result.meter * 0.6;
@@ -837,10 +868,11 @@ export class JugaadGame {
       const state = this.doors[door.id];
       door.steps.forEach((step, i) => {
         if (state.done[step.id]) return;
-        const ownsOil = this.inventory.some((it) => ITEMS[it.id].tags.includes("oil"));
-        // An optional step (oiling) only competes for the spot once you
-        // could actually do it.
-        const rank = step.optional ? (ownsOil ? 0.5 : 5) : i;
+        const held = this.inventory[this.selected];
+        const holdingOil = Boolean(held && ITEMS[held.id].tags.includes("oil"));
+        // An optional step (oiling) only competes for the spot while you are
+        // holding something to do it with.
+        const rank = step.optional ? (holdingOil ? 0.5 : 5) : i;
         list.push({ kind: "step", key: `s:${door.id}:${step.id}`, door, step, ...cellPoint(step.at), rank });
       });
       if (doorUnlocked(door.id, this.doors) && !(door.id === "shutter" && state.open)) {
@@ -905,8 +937,12 @@ export class JugaadGame {
       case "container": {
         const c = t.c;
         if (this.searched.has(c.id) && !this.contents[c.id].length) return { label: c.name, sub: "Already searched — nothing left." };
-        if (c.needs?.item && !this.inventory.some((it) => it.id === c.needs.item)) {
-          return { label: `${c.name} — locked`, sub: "A small key would open it." };
+        if (c.needs?.item && this.inventory[this.selected]?.id !== c.needs.item) {
+          const slot = this.inventory.findIndex((it) => it.id === c.needs.item);
+          return {
+            label: `${c.name} — locked`,
+            sub: slot >= 0 ? `Hold your ${ITEMS[c.needs.item].name.toLowerCase()} to open it — press ${slot + 1}.` : "A small key would open it.",
+          };
         }
         if (c.needs?.code && !this.knowsCode) {
           return { label: c.name, sub: "Locked with a 3-digit code. Did he write it down somewhere?" };
@@ -915,8 +951,20 @@ export class JugaadGame {
         return { label: verb, sub: c.noise >= 0.3 ? "Creaky — he might hear it." : "", time: c.time, busy: "search", key: t.key };
       }
       case "step": {
-        const ways = waysFor(t.step, this.inventory, selectedUid);
+        // Only what is in your hand works. If the right thing is in your
+        // bag, say which slot.
+        const held = this.inventory[this.selected];
+        const ways = waysFor(t.step, held ? [held] : [], selectedUid);
         if (!ways.length) {
+          const inBag = waysFor(t.step, this.inventory);
+          if (inBag.length) {
+            const options = [...new Map(inBag.map((w) => [w.item.uid, w.item])).values()]
+              .map((item) => `${ITEMS[item.id].name} (${this.inventory.indexOf(item) + 1})`);
+            return {
+              label: `${t.door.name}: ${t.step.name}`,
+              sub: `Take it in hand first — select your ${options.slice(0, 2).join(" or ")}.`,
+            };
+          }
           const want = [...new Set(Object.keys(t.step.ways).map((tag) => TAG_WORDS[tag]).filter(Boolean))];
           // The hint already says what a one-answer step wants; spell out the
           // options only when there are several.
@@ -924,11 +972,11 @@ export class JugaadGame {
           return { label: `${t.door.name}: ${t.step.name}`, sub: `${t.step.hint}${extra}` };
         }
         const way = ways[0];
-        const others = ways.length - 1;
+        const others = waysFor(t.step, this.inventory).filter((w) => w.item && w.item.uid !== way.item?.uid).length;
         const loud = way.noise >= 0.6 ? " — VERY LOUD" : way.noise >= 0.25 ? " — a bit noisy" : "";
         return {
           label: `${way.verb} with ${way.item ? ITEMS[way.item.id].name : "your hands"}`,
-          sub: `${t.door.name}: ${t.step.name}${loud}${others ? ` · ${others} other way${others > 1 ? "s" : ""} — pick an item (1–5)` : ""}`,
+          sub: `${t.door.name}: ${t.step.name}${loud}${others ? ` · ${others} other thing${others > 1 ? "s" : ""} in your bag would work too` : ""}`,
           time: way.time,
           busy: busyFor(way.tag),
           key: `${t.key}:${way.item?.uid || "hands"}`,
@@ -1706,19 +1754,12 @@ export class JugaadGame {
     this.showEndCard(false);
   }
 
-  updateEscape(dt) {
-    const scene = this.cutscene;
-    scene.update(dt);
-    const fadeIn = Math.max(0, 1 - scene.t / ESCAPE_FADE_IN_S);
-    const fadeOut = Math.max(0, Math.min(1, (scene.t - ESCAPE.FADE_AT) / (ESCAPE.LENGTH - ESCAPE.FADE_AT - 0.3)));
-    this.el.fade.style.opacity = String(Math.max(fadeIn, fadeOut));
-    scene.render();
-    if (scene.done) {
-      scene.dispose();
-      this.cutscene = null;
-      this.el.fade.style.opacity = "0";
-      this.showEndCard(true);
-    }
+  // The ending has played (or been skipped): the card.
+  finishEscape() {
+    this.endCinematic();
+    this.sound.escaped();
+    this.el.fade.style.opacity = "0";
+    this.showEndCard(true);
   }
 
   showEndCard(escaped) {
@@ -1732,8 +1773,8 @@ export class JugaadGame {
     this.el.endEyebrow.textContent = title;
     this.el.endTitle.textContent = escaped ? "Ghar pahunch gaye!" : "Overtime.";
     this.el.endBody.textContent = escaped
-      ? `Out under the shutter at ${clock}. Resignation: effective immediately. Notice period: served in spirit. Behind you, Motu Sir is still shouting "Kal subah nau baje!" from the doorway.`
-      : "Five slaps, and a night in the record room. At 11:40 PM somebody remembers to unlock the door. Your resignation letter is still in your pocket — and your notice period starts tomorrow.";
+      ? `Out under the shutter at ${clock}, into an auto, home. Resignation: on his desk. Motu Sir: blocked. Notice period: served in spirit. Sukoon.`
+      : "Three slaps, and a night in the record room. At 11:40 PM somebody remembers to unlock the door. Your resignation letter is still in your pocket — and your notice period starts tomorrow.";
     this.el.endStats.innerHTML = "";
     const stat = (label, value) => {
       const li = document.createElement("li");
@@ -1774,6 +1815,52 @@ export class JugaadGame {
     return best;
   }
 
+  // ---------------------------------------------------------------- pause
+
+  // mode: "pause" (the chai break), or "leave" / "restart" — the same card
+  // asking whether you really want to throw this shift away.
+  pause(mode = "pause") {
+    if (!this.active || this.runOver) return;
+    if (!this.userPaused) {
+      this.userPaused = true;
+      this.pausedLock = this.input.locked;
+      this.input.locked = true;
+      this.hold = null;
+      this.input.hold = false;
+      this.sound.stopBusy();
+      this.look.disable();
+      if (this.audio.ctx?.state === "running") this.audio.ctx.suspend().catch(() => {});
+    }
+    this.pauseMode = mode;
+    const texts = {
+      pause: ["Chai break", "Paused", "Motu Sir is frozen mid-sip. Take your time.", "Resume"],
+      leave: ["Leave the bank?", "Chhod ke jaa rahe ho?", "You'll lose this shift — every lock you've opened and everything in your bag.", "Stay"],
+      restart: ["Start over?", "Phir se shuru?", "The doors lock again and your bag empties. Motu Sir gets a fresh cup of chai.", "Keep playing"],
+    }[mode];
+    const [eyebrow, title, body, primary] = texts;
+    this.el.pauseEyebrow.textContent = eyebrow;
+    this.el.pauseTitle.textContent = title;
+    this.el.pauseBody.textContent = body;
+    this.el.pausePrimary.textContent = primary;
+    this.el.pauseRestart.textContent = mode === "restart" ? "Yes, start over" : "Restart the shift";
+    this.el.pauseLeave.textContent = mode === "leave" ? "Yes, leave" : "Leave to title";
+    this.el.pauseRestart.classList.toggle("hidden", mode === "leave");
+    this.el.pauseLeave.classList.toggle("hidden", mode === "restart");
+    this.el.pauseCard.classList.toggle("confirm", mode !== "pause");
+    this.el.pause.classList.remove("hidden");
+    this.el.pausePrimary.focus?.();
+  }
+
+  resume() {
+    if (!this.userPaused) return;
+    this.userPaused = false;
+    this.el.pause.classList.add("hidden");
+    this.input.locked = this.pausedLock ?? false;
+    if (!this.paused && !this.cinematic) this.look.enable();
+    this.audio.ctx?.resume?.().catch(() => {});
+    this.lastTime = performance.now();
+  }
+
   restart() {
     this.teardown();
     this.start();
@@ -1787,6 +1874,11 @@ export class JugaadGame {
 
   teardown() {
     this.active = false;
+    if (this.userPaused) {
+      this.userPaused = false;
+      this.audio.ctx?.resume?.().catch(() => {});
+    }
+    this.el.pause?.classList.add("hidden");
     cancelAnimationFrame(this.frameId);
     clearTimeout(this.flashTimer);
     clearTimeout(this.subtitleTimer);
@@ -1802,8 +1894,6 @@ export class JugaadGame {
     this.input.crouchOn = false;
     this.input.syncStanceButtons();
     this.sound.stop();
-    this.cutscene?.dispose();
-    this.cutscene = null;
     this.escapeFade = null;
     this.cardShown = false;
     this.el.end.classList.add("hidden");
