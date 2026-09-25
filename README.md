@@ -25,7 +25,9 @@ lying around — without him catching you.
 - **Getting seen fills a meter**, slowly while he is busy, fast when he is
   looking for you. Crouch behind desks to break it. If it fills: THAPPAD, back
   to your desk, and whatever you were holding goes into his almirah. Three
-  slaps and it is the record room till midnight.
+  slaps and it is the record room: a desk, a lamp, and every pending file.
+- **Out by 11 PM.** At 11 Sir lets the branch go home, one by one, each
+  showing him the day's work at the gate. You won't have any.
 - **Close doors behind you.** If he spots a door standing open (or a
   smashed padlock), he marches over and locks it himself, then goes looking
   for whoever did it — be on the right side of it when he gets there.

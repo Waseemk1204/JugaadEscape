@@ -1508,3 +1508,18 @@ body.cinematic .look-hint,
 .pause-card.help .controls-label {
   display: none;
 }
+
+/* Paused: the top-right buttons (full screen, controls, pause, leave) stay
+   usable above the card; the rest of the HUD waits underneath. */
+.solo-screen.paused .solo-hud {
+  z-index: 31;
+}
+
+.solo-screen.paused .solo-hud > *:not(.solo-top),
+.solo-screen.paused .solo-top > *:not(.solo-top-actions) {
+  visibility: hidden;
+}
+
+.solo-screen .pause-overlay {
+  padding-top: calc(max(16px, var(--safe-top)) + 58px);
+}

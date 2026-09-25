@@ -6,8 +6,11 @@
 //                  by one, locks the shutter, the gate and the wooden doors,
 //                  and tells the whole branch nobody goes home.
 //   LockupScene  — the last thappad. He shoves you into the record room at
-//                  the back, tells you that you in particular are not going
-//                  anywhere tonight, and locks the door.
+//                  the back, sits you at a desk of pending files and locks
+//                  the door. The lights stay on: there is work to do.
+//   ClosingTimeScene — 11 PM and you are still here. The branch queues at
+//                  the gate to show Sir the day's work and go home. You
+//                  have nothing to show, so it's the record room for you too.
 //
 // Each scene is a generator: it yields a number of seconds to wait, or a
 // function to wait on, and reads top to bottom like a script. The scene owns
@@ -487,15 +490,101 @@ function buildRecordRoomDoor(scene) {
   };
 }
 
-export class LockupScene extends Scene {
+// The desk they have put in there for you: a lamp, a steel glass of cold
+// chai, and every file the branch has not got round to since 2019.
+function buildRecordDesk(scene) {
+  const own = [];
+  const mat = (color, extra) => {
+    const m = new THREE.MeshLambertMaterial({ color, ...extra });
+    own.push(m);
+    return m;
+  };
+  const box = new THREE.BoxGeometry(1, 1, 1);
+  const cyl = new THREE.CylinderGeometry(0.5, 0.5, 1, 14);
+  const cone = new THREE.CylinderGeometry(0.3, 0.5, 1, 14, 1, true);
+  own.push(box, cyl, cone);
+  const group = new THREE.Group();
+  const put = (geometry, material, [sx, sy, sz], [x, y, z], ry = 0) => {
+    const mesh = new THREE.Mesh(geometry, material);
+    mesh.scale.set(sx, sy, sz);
+    mesh.position.set(x, y, z);
+    mesh.rotation.y = ry;
+    group.add(mesh);
+    return mesh;
+  };
+
+  // Desk (centred on the group, long side east–west) and its chair, south.
+  const wood = mat(0x6b4a2e);
+  const steel = mat(0x8d9399);
+  put(box, wood, [1.5, 0.05, 0.8], [0, 0.75, 0]);
+  for (const [x, z] of [[-0.7, -0.35], [0.7, -0.35], [-0.7, 0.35], [0.7, 0.35]]) put(box, steel, [0.05, 0.75, 0.05], [x, 0.375, z]);
+  put(box, wood, [1.4, 0.35, 0.02], [0, 0.55, -0.38]);
+  const chairAt = M(1.15);
+  put(box, mat(0x3d4a5c), [0.46, 0.05, 0.46], [0, 0.46, chairAt]);
+  put(box, mat(0x3d4a5c), [0.46, 0.5, 0.05], [0, 0.74, chairAt + 0.22]);
+  for (const [x, z] of [[-0.2, -0.2], [0.2, -0.2], [-0.2, 0.2], [0.2, 0.2]]) put(box, steel, [0.03, 0.45, 0.03], [x, 0.225, chairAt + z]);
+
+  // The files: tied bundles in stacks, the tallest right in front of you.
+  const covers = [0xd9b779, 0xc9a45a, 0xe3c98f, 0xb88a4a, 0x9c4a3c];
+  const tape = mat(0xb0342a);
+  const coverMats = covers.map((c) => mat(c));
+  let seed = 7;
+  const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+  for (const [x, z, count] of [[-0.45, -0.18, 9], [0.05, -0.22, 14], [0.5, -0.15, 7], [0.62, 0.2, 4]]) {
+    let y = 0.775;
+    for (let i = 0; i < count; i += 1) {
+      const h = 0.03 + rnd() * 0.03;
+      const turn = (rnd() - 0.5) * 0.25;
+      put(box, coverMats[Math.floor(rnd() * coverMats.length)], [0.34, h, 0.25], [x + (rnd() - 0.5) * 0.03, y + h / 2, z], turn);
+      if (i % 3 === 1) put(box, tape, [0.02, h + 0.004, 0.252], [x, y + h / 2, z], turn);
+      y += h;
+    }
+  }
+  // The one you have to start on, open, with a pen on it.
+  put(box, coverMats[0], [0.46, 0.012, 0.3], [-0.05, 0.782, 0.2]);
+  put(box, mat(0xf3efe4), [0.21, 0.006, 0.28], [-0.16, 0.791, 0.2]);
+  put(box, mat(0xf3efe4), [0.21, 0.006, 0.28], [0.07, 0.791, 0.2]);
+  put(cyl, mat(0x1d3f8f), [0.012, 0.15, 0.012], [0.1, 0.8, 0.22]).rotation.z = Math.PI / 2;
+  // Cold chai in a steel glass.
+  put(cyl, steel, [0.07, 0.1, 0.07], [0.35, 0.825, 0.24]);
+
+  // The lamp, off until you sit down.
+  const lampMat = mat(0x2f5d3a);
+  put(cyl, lampMat, [0.14, 0.03, 0.14], [-0.58, 0.79, 0.1]);
+  put(cyl, lampMat, [0.02, 0.38, 0.02], [-0.58, 0.97, 0.1]);
+  const shade = put(cone, mat(0x2f5d3a, { side: THREE.DoubleSide }), [0.26, 0.16, 0.26], [-0.5, 1.15, 0.12]);
+  shade.rotation.z = -0.35;
+  const bulbMat = mat(0x6b6150, { emissive: 0x000000 });
+  put(new THREE.SphereGeometry(0.04, 10, 8), bulbMat, [1, 1, 1], [-0.5, 1.1, 0.12]);
+  const lamp = new THREE.PointLight(0xffd79a, 0, 3.5, 1.4);
+  lamp.position.set(-0.45, 1.05, 0.15);
+  group.add(lamp);
+
+  group.position.set(M(17.8), 0, M(35.9));
+  scene.add(group);
+  return {
+    // Where you sit, in cells.
+    seat: [17.8, 35.9 + 1.15],
+    switchOn() {
+      lamp.intensity = 2.4;
+      bulbMat.emissive.setHex(0xffd79a);
+    },
+    dispose() {
+      scene.remove(group);
+      for (const thing of own) thing.dispose();
+    },
+  };
+}
+
+// Both ways a shift can end without you going home finish the same way: in
+// the record room, at a desk, with the lights on and the work waiting.
+class RecordRoomScene extends Scene {
   constructor(game) {
     super(game);
     this.door = buildRecordRoomDoor(game.scene);
+    this.desk = buildRecordDesk(game.scene);
     this.doorAngle = -Math.PI * 0.47; // open, swung into the room
     this.doorTarget = this.doorAngle;
-    this.fade = 1;
-    this.fadeTo = 1;
-    this.begin();
   }
 
   update(dt, now) {
@@ -504,7 +593,8 @@ export class LockupScene extends Scene {
     super.update(dt, now);
   }
 
-  *script() {
+  // Shoved in; Sir's say from the doorway; the door; the desk.
+  *lockIn({ ouch, lines, thoughts }) {
     const g = this.game;
     const a = this.actor;
     const e = this.eye;
@@ -513,6 +603,7 @@ export class LockupScene extends Scene {
     // Sir, in the record room doorway, having just shoved you through it.
     a.x = 15.95 * TILE;
     a.y = 30.4 * TILE;
+    a.path = [];
     a.angle = SOUTH;
     a.face(SOUTH);
     a.pose = "stand";
@@ -520,7 +611,7 @@ export class LockupScene extends Scene {
     e.cut({ at: [15.95, 31.6], h: 1.5, yaw: Math.PI, pitch: -0.3 });
     yield 0.4;
 
-    // Stumbling in, into the dust and the files.
+    // Stumbling in, among the racks and the dust.
     this.fadeIn(0.5);
     e.moveTo([15.9, 34.3], 1.25, 0.9);
     e.roll = 0.18;
@@ -528,17 +619,16 @@ export class LockupScene extends Scene {
     e.shake = 0.6;
     yield 0.9;
     e.roll = 0;
-    yield* this.think("…Aah. Meri gaal.", 1.6);
+    yield* this.think(ouch, 1.6);
     e.moveTo([15.9, 34.3], 1.6, 0.6);
     e.follow({ x: a.x, y: a.y, h: 1.75 }, 2.2);
     yield 1.2;
 
-    yield* this.boss("Bahut bhaagne ka shauk hai na, Sharma? Ab yahan baitho — purane records ke saath.", "normal", 4.2);
-    yield* this.boss("Baaki sab ko shaayad gyaarah baje jaane doon. Lekin tum…", "normal", 3.2);
-    a.pose = "point";
-    yield* this.boss("Tum toh aaj khaas taur pe nahi jaoge.", "shout", 3.2);
-    a.pose = "stand";
-    yield* this.boss("Aur yeh resignation letter? Notice period teen mahine ka hota hai, Sharma. Teen. Mahine.", "normal", 4.4);
+    for (const [text, mood, seconds, pose] of lines) {
+      if (pose) a.pose = pose;
+      yield* this.boss(text, mood, seconds);
+      a.pose = "stand";
+    }
 
     // The door.
     a.pose = "reach";
@@ -562,17 +652,24 @@ export class LockupScene extends Scene {
     a.speed = 80;
     a.walkTo(C(22.5, 29.8));
     e.follow({ x: 15.95 * TILE, y: 31 * TILE, h: 1.75 }, 1.5);
-    yield 2.4;
-
-    // And the light.
-    sound.lightSwitch();
-    g.world.ambient.intensity = 0.08;
-    g.world.hemi.intensity = 0.06;
-    for (const light of g.world.lights) light.intensity = 0;
-    yield 1.4;
-    yield* this.think("…Kal. Kal toh pakka.", 2.6);
-    this.fadeOut(1.6);
     yield 1.8;
+
+    // The lights stay on. There is a desk, and there is work.
+    const [sx, sy] = this.desk.seat;
+    e.look(Math.atan2(-(sx - 15.9), -(sy - 1.1 - 34.3)), -0.3, 2);
+    yield 1.1;
+    e.moveTo([sx, sy], 1.18, 1.1);
+    e.look(0, -0.55, 1.6);
+    yield 1;
+    sound.chairCreak(sx * TILE, sy * TILE);
+    yield 0.9;
+    sound.lightSwitch();
+    this.desk.switchOn();
+    yield 0.9;
+    for (const text of thoughts) yield* this.think(text);
+    e.look(0, -0.78, 0.8);
+    this.fadeOut(1.8);
+    yield 2;
   }
 
   finish() {
@@ -581,11 +678,222 @@ export class LockupScene extends Scene {
     const g = this.game;
     g.el.fade.style.opacity = "1";
     g.endCinematic();
-    g.finishLockup();
+    g.finishLockup(this.kind);
   }
 
   dispose() {
     this.door.dispose();
+    this.desk.dispose();
+  }
+}
+
+// The last thappad.
+export class LockupScene extends RecordRoomScene {
+  constructor(game) {
+    super(game);
+    this.kind = "slaps";
+    this.fade = 1;
+    this.fadeTo = 1;
+    this.begin();
+  }
+
+  *script() {
+    yield* this.lockIn({
+      ouch: "…Aah. Meri gaal.",
+      lines: [
+        ["Bahut bhaagne ka shauk hai na, Sharma? Ab yahan baitho — purane records ke saath.", "normal", 4.2],
+        ["Baaki sab ko shaayad gyaarah baje jaane doon. Lekin tum…", "normal", 3.2],
+        ["Tum toh aaj khaas taur pe nahi jaoge.", "shout", 3.2, "point"],
+        ["Yeh saari pending files — aaj raat, yahin baith ke khatam karo. Aur resignation? Notice period teen mahine ka hota hai. Teen. Mahine.", "normal", 5],
+      ],
+      thoughts: ["…Resignation letter jeb mein. Aur saamne 2019 ki files.", "Chalo, Sharma. Ek file. Bas ek aur file."],
+    });
+  }
+}
+
+// ------------------------------------------------------------- eleven o'clock
+
+// 11 PM and you are still inside. Sir lets the branch go home — one by one,
+// each showing him the day's work at the gate. Everyone has something to
+// show. You spent the evening on the locks.
+const QUEUE_LINES = [
+  ["Gupta ji", "Sir, saare loan files update kar diye.", "Hmm. Theek hai. Jao."],
+  ["Priya", "Sir, aaj ke saare KYC verify ho gaye.", "Shabaash. Ghar jao."],
+  ["Verma", "Cash tally, sir. Ek paisa kam nahi.", "Achha. Kal time pe aana."],
+  ["Anjali", "NEFT ki list, sir.", "Hmm."],
+  ["Iyer", "Audit ki file, sir.", "Theek."],
+  ["Tiwari", "Passbook entries, sir.", "Jao."],
+  ["Rekha", "Locker register, sir.", "Haan, haan. Jao."],
+];
+const QUEUE_X = 16.9;
+const queueSlot = (i) => C(QUEUE_X, 5.95 + i * 0.95);
+
+// A colleague on their feet, walking where the scene sends them.
+class Walker {
+  constructor(world, p, at) {
+    this.world = world;
+    this.p = p;
+    this.x = at.x;
+    this.y = at.y;
+    this.path = [];
+    this.speed = 62;
+    this.facing = 0;
+    world.setStanding(p, true);
+    this.place(0);
+  }
+
+  go(...points) {
+    this.path = points;
+  }
+
+  update(dt, now) {
+    let moving = false;
+    if (this.path.length) {
+      const next = this.path[0];
+      const dx = next.x - this.x;
+      const dy = next.y - this.y;
+      const d = Math.hypot(dx, dy);
+      const step = this.speed * dt;
+      if (d <= step) {
+        this.x = next.x;
+        this.y = next.y;
+        this.path.shift();
+      } else {
+        this.x += (dx / d) * step;
+        this.y += (dy / d) * step;
+        this.facing = Math.atan2(-dx, -dy);
+        moving = true;
+      }
+    } else {
+      this.facing += wrap(0 - this.facing) * Math.min(1, dt * 5);
+    }
+    this.place(moving ? Math.abs(Math.sin(now * 9 + this.p.phase)) * 0.04 : 0);
+    // Out under the shutter and gone.
+    this.p.person.visible = this.y > -0.8 * TILE;
+  }
+
+  place(bob) {
+    this.p.person.position.set(this.x * U, bob, this.y * U);
+    this.p.person.rotation.y = this.facing;
+  }
+}
+
+export class ClosingTimeScene extends RecordRoomScene {
+  constructor(game) {
+    super(game);
+    this.kind = "eleven";
+    // It starts from the game as it is: Sir wherever he was, the camera
+    // where your eyes were. The fade hides the rearranging.
+    const g = game;
+    this.actor.x = g.brain.x;
+    this.actor.y = g.brain.y;
+    this.actor.angle = g.brain.angle;
+    this.actor.pose = g.brain.mode === "cabin" ? "sit" : "stand";
+    const cam = g.camera;
+    this.eye.cut({ at: [cam.position.x / U / TILE, cam.position.z / U / TILE], h: cam.position.y, yaw: g.yaw, pitch: g.pitch });
+    this.walkers = [];
+    this.begin();
+  }
+
+  update(dt, now) {
+    for (const w of this.walkers) w.update(dt, now);
+    super.update(dt, now);
+  }
+
+  *script() {
+    const g = this.game;
+    const a = this.actor;
+    const e = this.eye;
+    const sound = g.sound;
+
+    yield* this.boss("GYAARAH BAJ GAYE! Chalo sab — line mein lag jao!", "shout", 2.4);
+    yield this.fadeOut(0.9);
+
+    // In the dark: the doors unlocked and open, the branch in a queue
+    // from the gate back into the hall, Sir at its head.
+    for (const id of ["wooden", "gate", "shutter"]) {
+      g.doors[id].open = true;
+      g.map.setDoorOpen(id, true);
+      g.doorVisuals.anim[id] = 1;
+    }
+    g.doorVisuals.shutterLift = 2.7;
+    this.walkers = g.world.people.map((p, i) => {
+      const w = new Walker(g.world, p, queueSlot(i));
+      return w;
+    });
+    a.path = [];
+    // In the gate's opening, so he can wave each one through.
+    a.x = 17.9 * TILE;
+    a.y = 4.75 * TILE;
+    a.faceToward(QUEUE_X * TILE, 5.95 * TILE);
+    a.angle = a.facing;
+    a.pose = "stand";
+    a.angry = false;
+    // From the far end of the landing: Sir, and whoever is in front of him.
+    e.cut({ at: [12.8, 6.4], h: 1.5, yaw: -Math.PI / 2 + 0.2, pitch: -0.04 });
+    e.follow({ ...C(17.4, 5.3), h: 1.3 }, 3);
+    yield 0.5;
+    this.fadeIn(1);
+    yield* this.boss("Ek ek karke. Aaj ka kaam dikhao — aur ghar jao.", "normal", 3);
+
+    for (let i = 0; i < this.walkers.length; i += 1) {
+      const front = this.walkers[i];
+      const [name, says, sir] = QUEUE_LINES[i % QUEUE_LINES.length];
+      const quick = i >= 3;
+      g.world.showFile(front.p, true);
+      sound.pickup();
+      g.subtitle(says, "aside", name);
+      yield quick ? 1.1 : 1.8;
+      yield* this.boss(sir, "aside", quick ? 0.9 : 1.5);
+      g.world.showFile(front.p, false);
+      // Through the gate, out under the shutter, home.
+      front.speed = 80;
+      front.go(C(QUEUE_X, 3.2), C(QUEUE_X, -2));
+      for (let j = i + 1; j < this.walkers.length; j += 1) this.walkers[j].go(queueSlot(j - i - 1));
+      yield quick ? 0.8 : 1.1;
+    }
+
+    // Your turn. Nothing in your hands but six years and a resignation.
+    yield 0.8;
+    e.cut({ at: [QUEUE_X, 6.9], h: 1.6, yaw: -0.5, pitch: 0.02, track: "boss" });
+    a.walkTo(C(18.7, 5.4));
+    yield () => !a.walking;
+    a.faceToward(QUEUE_X * TILE, 6.9 * TILE);
+    yield 0.3;
+    yield* this.boss("Sharma. Tumhara kaam?", "normal", 2);
+    yield* this.think("Kaam? Poori shaam toh taale khol raha tha… Jeb mein bas ek hi kaagaz hai.", 3);
+    g.subtitle("Sir… aaj ka kaam… yeh hai. Mera resignation. Immediate effect.", "aside", "You");
+    sound.pickup();
+    yield 3;
+    a.pose = "reach";
+    yield 0.6;
+    a.pose = "stand";
+    yield* this.boss("Resignation?! …Immediate effect?!", "normal", 2.2);
+    a.angry = true;
+    e.shake = 0.3;
+    yield* this.boss("Notice period teen mahine ka hota hai, Sharma. Aur aaj ka kaam? EK BHI FILE NAHI?!", "shout", 3.6);
+    a.pose = "point";
+    yield* this.boss("Record room. Abhi. Pehle saari pending files — resignation uske baad dekhenge!", "shout", 3.4);
+    a.pose = "stand";
+    yield this.fadeOut(0.8);
+
+    // Everyone else is on their way home; they needn't be seen again.
+    for (const w of this.walkers) w.p.person.visible = false;
+    this.walkers = [];
+    for (const id of ["wooden", "gate", "shutter"]) {
+      g.doors[id].open = false;
+      g.map.setDoorOpen(id, false);
+    }
+
+    yield* this.lockIn({
+      ouch: "…Arre, dhakka mat do, sir—",
+      lines: [
+        ["Sab ghar gaye. Tum yahan. Kaam khatam — tab ghar.", "normal", 3.2],
+        ["Aur yeh resignation letter? Files ke neeche rakh do. Sabse neeche.", "normal", 3.2],
+        ["Subah nau baje tak ek bhi file pending nahi dikhni chahiye.", "shout", 3.2, "point"],
+      ],
+      thoughts: ["…Resignation letter, files ke neeche. Aur files, meri naak tak.", "Chalo, Sharma. Ek file. Bas ek aur file."],
+    });
   }
 }
 

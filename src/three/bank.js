@@ -890,8 +890,9 @@ export class BankWorld {
       top.scale.set(0.23, seat.bald ? 0.08 : 0.14, 0.23);
       top.position.set(0, seat.bald ? 1.3 : 1.29, 0.02);
       person.add(torso, head, top);
+      let bun = null;
       if (seat.long) {
-        const bun = new THREE.Mesh(this.batch.geometries.sph, hair);
+        bun = new THREE.Mesh(this.batch.geometries.sph, hair);
         bun.scale.setScalar(0.11);
         bun.position.set(0, 1.24, 0.13);
         person.add(bun);
@@ -910,7 +911,52 @@ export class BankWorld {
       person.add(legs);
       person.position.set(cx(seat.x), 0, cx(seat.y));
       this.group.add(person);
-      this.people.push({ person, arms, head, phase: seat.x * 1.7 + seat.y });
+      // The day's work, for showing Sir at 11 PM: a manila file, hidden
+      // until then.
+      const file = new THREE.Mesh(this.batch.geometries.box, this.m.manila || this.mat(0xd9b779));
+      file.scale.set(0.3, 0.24, 0.03);
+      file.position.set(0, 1.18, -0.34);
+      file.rotation.x = -0.35;
+      file.visible = false;
+      person.add(file);
+      this.people.push({ person, arms, head, torso, top, bun, legs, file, standing: false, phase: seat.x * 1.7 + seat.y });
+    }
+  }
+
+  // Out of the chair and on their feet: a colleague in the 11 PM queue.
+  // (Built seated; this lifts the body and drops the arms and legs.)
+  setStanding(p, standing = true) {
+    if (p.standing === standing) return;
+    p.standing = standing;
+    const lift = standing ? 0.32 : -0.32;
+    for (const part of [p.torso, p.head, p.top, p.bun, p.file]) if (part) part.position.y += lift;
+    for (const [i, arm] of p.arms.entries()) {
+      const side = i ? 1 : -1;
+      if (standing) {
+        arm.scale.set(0.09, 0.5, 0.09);
+        arm.position.set(side * 0.26, 1.12, 0);
+      } else {
+        arm.scale.set(0.09, 0.09, 0.42);
+        arm.position.set(side * 0.2, 0.84, -0.2);
+      }
+    }
+    if (standing) {
+      p.legs.scale.set(0.3, 0.88, 0.2);
+      p.legs.position.set(0, 0.44, 0);
+    } else {
+      p.legs.scale.set(0.36, 0.14, 0.46);
+      p.legs.position.set(0, 0.54, -0.18);
+    }
+  }
+
+  // Holding the file up for Sir to see: both arms forward.
+  showFile(p, show = true) {
+    p.file.visible = show;
+    for (const [i, arm] of p.arms.entries()) {
+      const side = i ? 1 : -1;
+      arm.rotation.x = show ? 1.25 : 0;
+      arm.position.z = show ? -0.2 : 0;
+      arm.position.x = side * (show ? 0.16 : 0.26);
     }
   }
 
@@ -960,6 +1006,7 @@ export class BankWorld {
   update(time, dt) {
     for (const fan of this.fans) fan.blades.rotation.y -= fan.speed * dt;
     for (const p of this.people) {
+      if (p.standing) continue;
       const t = time * 7 + p.phase;
       p.arms[0].position.y = 0.84 + Math.max(0, Math.sin(t)) * 0.015;
       p.arms[1].position.y = 0.84 + Math.max(0, Math.sin(t + 1.9)) * 0.015;

@@ -28,7 +28,7 @@ import { Boss } from "./three/boss.js";
 import { DoorVisuals } from "./three/doors.js";
 import { BankAudio } from "./bankaudio.js";
 import { EndingScene } from "./three/ending.js";
-import { IntroScene, LockupScene } from "./cutscenes.js";
+import { IntroScene, LockupScene, ClosingTimeScene } from "./cutscenes.js";
 import { floorModel, heldModel, itemIcon } from "./three/items.js";
 import { WORK_HEIGHT, motionKind, TOOL_KINDS, toolPose, bodyMotion } from "./toolmotion.js";
 
@@ -41,6 +41,7 @@ const ATTEMPTS = 3;
 const REACH = 1.7 * 32; // map pixels you can reach from where you stand
 const START_MINUTES = 18 * 60; // 6:00 PM
 const GAME_MINUTES_PER_SECOND = 1 / 6; // the wall clock runs ten times fast
+const CLOSING_MINUTES = 23 * 60; // 11 PM: Sir lets the branch go — not you
 const BEST_KEY = "jugaad.escape.best";
 
 // How loud the player is on foot (0..1, see BossBrain.hearNoise).
@@ -165,8 +166,16 @@ export class JugaadGame {
     this.el.quit.addEventListener("click", () => this.quit());
     // Leaving (or starting over) throws the shift away, so it asks first.
     this.el.leave.addEventListener("click", () => this.pause("leave"));
-    this.el.pauseButton.addEventListener("click", () => this.pause("pause"));
-    this.el.helpButton.addEventListener("click", () => this.pause("help"));
+    // Both stay clickable over the pause card (see bank.css), so each one
+    // also takes you back to the game.
+    this.el.pauseButton.addEventListener("click", () => {
+      if (this.userPaused && this.pauseMode === "pause") this.resume();
+      else this.pause("pause");
+    });
+    this.el.helpButton.addEventListener("click", () => {
+      if (this.userPaused && this.pauseMode === "help") this.resume();
+      else this.pause("help");
+    });
     this.el.pausePrimary.addEventListener("click", () => {
       if (this.pauseMode === "pause" || this.pauseMode === "help") this.resume();
       else this.pause("pause");
@@ -250,6 +259,7 @@ export class JugaadGame {
     this.floorItems = [];
     this.floorMeshes = new Map();
     this.keysTaken = false;
+    this.failKind = null;
     this.cooldowns = {};
     this.pending = []; // delayed noises: { at, x, y, loudness }
 
@@ -347,7 +357,20 @@ export class JugaadGame {
     this.startCinematic(new LockupScene(this));
   }
 
-  finishLockup() {
+  // 11 PM and still inside: the queue at the gate, then the record room.
+  startClosingTime() {
+    this.runOver = true;
+    this.slap = null;
+    this.hold = null;
+    this.input.locked = true;
+    this.look.disable();
+    this.showPrompt(null);
+    this.sound.stopBusy();
+    this.startCinematic(new ClosingTimeScene(this));
+  }
+
+  finishLockup(kind = "slaps") {
+    this.failKind = kind;
     this.el.screen.classList.add("ending");
     this.sound.stop();
     this.sound.gameOver();
@@ -699,6 +722,15 @@ export class JugaadGame {
     this.updateInteraction(dt);
     this.aimAtWork(dt);
     this.updateHud();
+
+    // The clock. At 10 and at quarter to 11, a warning; at 11, closing time.
+    const minutes = START_MINUTES + this.elapsed * GAME_MINUTES_PER_SECOND;
+    if (minutes >= CLOSING_MINUTES - 60) this.hintOnce("ten", "10 PM. At 11 Sir lets everyone go home — after they show him the day's work. You haven't done any.");
+    if (minutes >= CLOSING_MINUTES - 15) this.hintOnce("quarter", "10:45 PM. Fifteen minutes till Sir checks everyone's work. Get out before 11!");
+    if (minutes >= CLOSING_MINUTES) {
+      this.startClosingTime();
+      return;
+    }
 
     // Under the shutter and out — with your phone, or the story has no
     // ending: it's how Sir finds out you've quit.
@@ -1939,10 +1971,12 @@ export class JugaadGame {
     const clock = formatClock(START_MINUTES + this.elapsed * GAME_MINUTES_PER_SECOND);
 
     this.el.endEyebrow.textContent = title;
-    this.el.endTitle.textContent = escaped ? "Ghar pahunch gaye!" : "Overtime.";
+    this.el.endTitle.textContent = escaped ? "Ghar pahunch gaye!" : this.failKind === "eleven" ? "Gyaarah baj gaye." : "Overtime.";
     this.el.endBody.textContent = escaped
       ? `Out under the shutter at ${clock}, into an auto, home. Resignation: on his desk. Motu Sir: blocked. Notice period: served in spirit. Sukoon.`
-      : "Three slaps, and a night in the record room. At 11:40 PM somebody remembers to unlock the door. Your resignation letter is still in your pocket — and your notice period starts tomorrow.";
+      : this.failKind === "eleven"
+        ? "At 11 the whole branch showed Sir the day's work and went home. All you had to show was your resignation — \"notice period teen mahine ka hota hai\" — so it's the record room, a desk, and every pending file till 9 AM, with the letter at the bottom of the pile."
+        : "Three slaps, and the record room: a desk, a lamp and every pending file since 2019, due by morning. Your resignation letter is still in your pocket — and your notice period starts tomorrow.";
     this.el.endStats.innerHTML = "";
     const stat = (label, value) => {
       const li = document.createElement("li");
@@ -2023,6 +2057,7 @@ export class JugaadGame {
     this.el.pauseCard.classList.toggle("help", mode === "help");
     this.el.pauseCard.classList.toggle("confirm", mode !== "pause");
     this.el.pause.classList.remove("hidden");
+    this.el.screen.classList.add("paused");
     this.el.pausePrimary.focus?.();
   }
 
@@ -2030,6 +2065,7 @@ export class JugaadGame {
     if (!this.userPaused) return;
     this.userPaused = false;
     this.el.pause.classList.add("hidden");
+    this.el.screen.classList.remove("paused");
     // Otherwise the HUD's pause button keeps focus, and the next Space or
     // Enter meant for the game presses it again.
     if (this.el.screen.contains(document.activeElement)) document.activeElement.blur();
@@ -2060,6 +2096,7 @@ export class JugaadGame {
       this.audio.ctx?.resume?.().catch(() => {});
     }
     this.el.pause?.classList.add("hidden");
+    this.el.screen.classList.remove("paused");
     cancelAnimationFrame(this.frameId);
     clearTimeout(this.flashTimer);
     clearTimeout(this.subtitleTimer);
