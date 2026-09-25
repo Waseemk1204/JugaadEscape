@@ -727,6 +727,7 @@ export class EndingScene {
 
     // 1 · Out under the shutter.
     this.cut(0, 0.5, 0.9, 0, -0.1);
+    this.startUrgency(0.65); // the chase cue, from the first moment outside
     this.fadeTo = 0;
     this.fadeRate = 1.2;
     this.move(0, 0.55, -0.9, 1.6);
@@ -740,6 +741,7 @@ export class EndingScene {
 
     // An auto, coming down the road.
     this.look(-1.05, -0.02, 2.2);
+    this.urgency = 1; // an auto — go, go, go
     this.heroSpeed = -10;
     yield 0.6;
     this.say("AUTO! Auto bhaiya!", "You", "shout");
@@ -777,6 +779,7 @@ export class EndingScene {
     yield 1.8;
     this.heroSpeed = -1;
     this.pullingAway = true;
+    this.stopUrgency(3.2); // away — the music lets go as the auto does
     this.say("Kal milenge toh na!", "You", "shout");
     yield 2.0;
     this.watchBoss = false;
@@ -1046,6 +1049,89 @@ export class EndingScene {
     this.engineOsc = null;
   }
 
+  // ------------------------------------------------------- the chase cue
+
+  // Urgent music for the dash to the auto: a dhol-style groove, a driving
+  // minor bass line, ticking hats, and — at full urgency — a rising
+  // shehnai-like swell. Notes are scheduled a little ahead on the audio
+  // clock so the rhythm stays tight whatever the frame rate is doing.
+  startUrgency(level = 1) {
+    const ctx = this.audio.ctx;
+    if (!ctx || this.urgentBus) return;
+    const bus = ctx.createGain();
+    bus.gain.value = 0;
+    bus.gain.setTargetAtTime(0.9, ctx.currentTime, 0.25);
+    bus.connect(this.audio.master);
+    this.urgentBus = bus;
+    this.urgency = level;
+    this.beatLength = 60 / 150 / 4; // sixteenths at 150 bpm
+    this.nextStep = ctx.currentTime + 0.1;
+    this.step = 0;
+    this.urgentTimer = setInterval(() => this.scheduleUrgency(), 40);
+  }
+
+  scheduleUrgency() {
+    const ctx = this.audio.ctx;
+    const bus = this.urgentBus;
+    if (!ctx || !bus) return;
+    const a = this.audio;
+    // D minor: the bass walks D, F, A, C under everything.
+    const BASS = [73.4, 73.4, 87.3, 73.4, 110, 73.4, 130.8, 110];
+    while (this.nextStep < ctx.currentTime + 0.2) {
+      const delay = Math.max(0, this.nextStep - ctx.currentTime);
+      const i = this.step % 16;
+      const bar = Math.floor(this.step / 16);
+      const u = this.urgency;
+      const out = bus;
+
+      // Dhol: syncopated low "dhum" and the sharp "ta" slap.
+      if (i === 0 || i === 6 || i === 8 || i === 14 || (u > 0.9 && i === 11)) {
+        a.tone({ freq: 118, type: "sine", duration: 0.22, gain: 0.32, slideTo: 46, delay, out });
+        a.noise({ duration: 0.05, gain: 0.12, filter: 300, delay, out });
+      }
+      if (i === 4 || i === 12) {
+        a.noise({ duration: 0.09, gain: 0.3, filter: 900, type: "bandpass", delay, out });
+        a.tone({ freq: 210, type: "triangle", duration: 0.09, gain: 0.12, slideTo: 150, delay, out });
+      }
+      // Ticking hats on the off-sixteenths, doubling when it matters.
+      if (i % 2 === 1 || (u > 0.9 && i % 4 === 2)) {
+        a.noise({ duration: 0.025, gain: 0.05 + u * 0.04, filter: 7000, type: "highpass", delay, out });
+      }
+      // The bass line, one note per eighth.
+      if (i % 2 === 0) {
+        const f = BASS[(i / 2) % BASS.length];
+        a.tone({ freq: f, type: "square", duration: this.beatLength * 1.8, gain: 0.07, delay, out });
+        a.tone({ freq: f * 2, type: "sawtooth", duration: this.beatLength * 1.2, gain: 0.025 * u, delay, out });
+      }
+      // Tension stabs: a minor second, every bar.
+      if (i === 0) {
+        a.tone({ freq: 587.3, type: "sawtooth", duration: 0.16, gain: 0.03 * u, delay, out });
+        a.tone({ freq: 622.3, type: "sawtooth", duration: 0.16, gain: 0.03 * u, delay, out });
+      }
+      // At full urgency: a shehnai-like swell rising over two bars.
+      if (u > 0.9 && i === 0 && bar % 2 === 0) {
+        a.tone({ freq: 440, type: "sawtooth", duration: this.beatLength * 30, gain: 0.035, attack: 0.3, slideTo: 698.5, delay, out });
+        a.tone({ freq: 880, type: "sine", duration: this.beatLength * 30, gain: 0.02, attack: 0.3, slideTo: 1396.9, delay, out });
+      }
+
+      this.nextStep += this.beatLength;
+      this.step += 1;
+    }
+  }
+
+  // Let the music go: a fade, and one last dhol hit to close it.
+  stopUrgency(fade = 2) {
+    const ctx = this.audio.ctx;
+    const bus = this.urgentBus;
+    if (!bus || !ctx) return;
+    this.urgentBus = null;
+    clearInterval(this.urgentTimer);
+    this.audio.tone({ freq: 98, type: "sine", duration: 0.6, gain: 0.3, slideTo: 40, out: bus });
+    this.audio.noise({ duration: 0.4, gain: 0.12, filter: 500, out: bus });
+    bus.gain.setTargetAtTime(0, ctx.currentTime + 0.3, fade / 3);
+    setTimeout(() => bus.disconnect(), (fade + 1) * 1000);
+  }
+
   // Home: the fan's whoosh and crickets outside.
   startHomeSound() {
     const ctx = this.audio.ctx;
@@ -1103,6 +1189,7 @@ export class EndingScene {
   }
 
   dispose() {
+    this.stopUrgency(0.3);
     this.stopStreetSound();
     clearInterval(this.cricketTimer);
     if (this.homeBus) {
