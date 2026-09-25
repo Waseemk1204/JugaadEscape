@@ -769,8 +769,10 @@ export class EndingScene {
     // One look back — leaning out of the open side of the auto. He is under
     // the shutter, and he is not coming out.
     this.bossOn = true;
-    const lean = { x: hero.position.x + 0.3, z: -6.4 + 0.66 };
-    this.move(lean.x, 1.38, lean.z, 3);
+    // Head right out past the canopy's side panel, so nothing of the auto
+    // gets between you and him.
+    const lean = { x: hero.position.x + 0.3, z: -6.4 + 0.98 };
+    this.move(lean.x, 1.3, lean.z, 3);
     this.eyeRate = 2.4;
     this.watchBoss = true;
     yield 1.0;
@@ -783,7 +785,9 @@ export class EndingScene {
     this.say("Kal milenge toh na!", "You", "shout");
     yield 2.0;
     this.watchBoss = false;
-    this.look(Math.PI / 2, 0.0, 1.6);
+    // Back into the seat for the ride, eyes on the road ahead.
+    this.move(hero.position.x + 0.68, 1.36, -6.6, 2.5);
+    this.look(Math.PI / 2 - 0.08, -0.05, 1.8);
     yield 2.4;
     this.fadeTo = 1;
     this.fadeRate = 1.1;
