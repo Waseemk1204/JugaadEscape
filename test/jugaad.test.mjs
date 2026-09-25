@@ -5,7 +5,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
-  ITEMS, RECIPES, DOORS, CONTAINERS, placeItems, waysFor, combine, spend, makeItem, lockedDoors, doorUnlocked, jugaadScore,
+  ITEMS, RECIPES, DOORS, CONTAINERS, placeItems, waysFor, combine, spend, makeItem, lockedDoors, doorUnlocked, jugaadScore, jugaadTitle,
 } from "../shared/jugaad.js";
 
 function seeded(seed) {
@@ -107,4 +107,11 @@ test("escaping with improvised tools beats escaping with keys", () => {
   const keys = jugaadScore({ escaped: true, seconds: 400, log: [{ tag: "masterkey" }, { tag: "hook" }, { tag: "masterkey" }, { tag: "masterkey" }, { tag: "masterkey" }] });
   assert.ok(improvised > keys);
   assert.ok(CONTAINERS.length > 20);
+});
+
+test("a shift that ends inside is titled for how it ended", () => {
+  assert.equal(jugaadTitle(0, false, "eleven"), "Record room ka naya karmchari");
+  assert.equal(jugaadTitle(0, false, "slaps"), "Teen thappad club");
+  assert.equal(jugaadTitle(900, false, "eleven"), "Almost Home");
+  assert.notEqual(jugaadTitle(0, true), "Record room ka naya karmchari");
 });

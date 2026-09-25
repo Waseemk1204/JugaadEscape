@@ -409,7 +409,9 @@ export class JugaadGame {
       [18000, "Every minute Sir walks a round past your desk. Every other time he goes to the loo instead — then his cabin is empty."],
       [26000, "Make a noise and he'll shout \"Kaun hai?!\" — you then have 10–15 seconds to get back in your chair. Get caught and it's a thappad."],
     ];
-    this.tutorialTimers = steps.map(([ms, text]) => setTimeout(() => this.active && !this.runOver && this.flash(text, 7000, 0), ms));
+    // On the game's clock, not the wall's: a pause holds the tips back
+    // rather than letting them flash by under the pause card.
+    this.tutorialSteps = steps.map(([ms, text]) => ({ at: this.elapsed + ms / 1000, text }));
   }
 
   // Borrow the shared input for as long as the shift lasts.
@@ -722,6 +724,7 @@ export class JugaadGame {
     this.updateInteraction(dt);
     this.aimAtWork(dt);
     this.updateHud();
+    while (this.tutorialSteps?.length && this.elapsed >= this.tutorialSteps[0].at) this.flash(this.tutorialSteps.shift().text, 7000, 0);
 
     // The clock. At 10 and at quarter to 11, a warning; at 11, closing time.
     const minutes = START_MINUTES + this.elapsed * GAME_MINUTES_PER_SECOND;
@@ -1738,7 +1741,7 @@ export class JugaadGame {
       case "phone":
         return { cls: "chance", text: `Sir stuck on the phone · ${s(b.timer)}` };
       case "alerted":
-        return { cls: "danger", text: `Sir heard that! Out in ${s(b.timer)} — get to your desk!` };
+        return { cls: "danger", text: `He heard you! Out in ${s(b.timer)} — sit down!` };
       case "round":
         return { cls: "warn", text: "Sir is walking his round" };
       case "washroom":
@@ -1967,7 +1970,7 @@ export class JugaadGame {
     const seconds = Math.floor(this.elapsed);
     const best = escaped ? this.recordBest(seconds) : null;
     const score = jugaadScore({ ...this.stats, seconds, escaped });
-    const title = jugaadTitle(score, escaped);
+    const title = jugaadTitle(score, escaped, this.failKind);
     const clock = formatClock(START_MINUTES + this.elapsed * GAME_MINUTES_PER_SECOND);
 
     this.el.endEyebrow.textContent = title;
@@ -2101,7 +2104,7 @@ export class JugaadGame {
     clearTimeout(this.flashTimer);
     clearTimeout(this.subtitleTimer);
     clearTimeout(this.noiseTimer);
-    for (const t of this.tutorialTimers || []) clearTimeout(t);
+    this.tutorialSteps = [];
     clearTimeout(this.titleTimer);
     this.el.titleFlash.classList.add("hidden");
     this.el.lookHint.classList.add("hidden");

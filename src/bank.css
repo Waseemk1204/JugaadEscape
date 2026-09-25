@@ -1523,3 +1523,31 @@ body.cinematic .look-hint,
 .solo-screen .pause-overlay {
   padding-top: calc(max(16px, var(--safe-top)) + 58px);
 }
+
+/* The clock never breaks across lines. */
+.solo-stat strong {
+  white-space: nowrap;
+}
+
+/* Small phones: Sir's status stays on one line, so it never runs into the
+   "at your desk" note below it. */
+@media (max-height: 500px) and (orientation: landscape) {
+  .hud-boss {
+    white-space: nowrap;
+  }
+
+  .hud-seated {
+    top: calc(max(8px, var(--safe-top)) + 50px);
+  }
+
+  #hud-boss-text {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+/* Paused during a cutscene, too: the top-right buttons come back. */
+#screen-solo.cinematic.paused .solo-hud > .solo-top {
+  display: flex !important;
+}

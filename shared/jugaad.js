@@ -398,8 +398,13 @@ export function jugaadScore({ log = [], crafted = 0, decoys = 0, slaps = 0, spot
   return Math.max(0, Math.round(score));
 }
 
-export function jugaadTitle(score, escaped) {
-  if (!escaped) return score > 600 ? "Almost Home" : "Overtime Champion";
+// How the shift went, in a phrase. A shift that ends inside is named for how
+// it ended: slapped three times, or still there at 11.
+export function jugaadTitle(score, escaped, failKind = "slaps") {
+  if (!escaped) {
+    if (score > 600) return "Almost Home";
+    return failKind === "eleven" ? "Record room ka naya karmchari" : "Teen thappad club";
+  }
   if (score >= 2400) return "Certified Jugaadu";
   if (score >= 1800) return "Desi MacGyver";
   if (score >= 1200) return "Chalu Clerk";

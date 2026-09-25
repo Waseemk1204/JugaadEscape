@@ -162,7 +162,8 @@ export class BossBrain {
   }
 
   startRelock(id) {
-    if (this.mode === "alerted") this.emit("standUp");
+    // Up out of his chair, if that is where he was.
+    if (this.mode === "alerted" || this.mode === "cabin" || this.mode === "phone") this.emit("standUp");
     this.peeing = false;
     this.setPlan("relock", [
       ...this.leaveCabinSteps(),
