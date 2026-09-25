@@ -26,6 +26,12 @@ lying around — without him catching you.
   looking for you. Crouch behind desks to break it. If it fills: THAPPAD, back
   to your desk, and whatever you were holding goes into his almirah. Three
   slaps and it is the record room till midnight.
+- **Close doors behind you.** If he spots a door standing open (or a
+  smashed padlock), he marches over and locks it himself, then goes looking
+  for whoever did it — be on the right side of it when he gets there.
+- **Don't forget your phone.** It's how he finds out you've quit. If he
+  confiscates it, it goes in his desk drawer (small key); you can't crawl
+  out under the shutter without it.
 - **Use what's in your hand.** Pick the tool (1–5, or tap a slot) before you
   hold E on a lock; the prompt tells you which slot has something that fits.
   Esc pauses; leaving or restarting asks first.
@@ -51,8 +57,10 @@ lying around — without him catching you.
   and a title — improvised answers beat keys, keys beat brute force.
 
 Controls: WASD move · Shift run · C crouch · hold E search / use · 1–5 pick
-item · F use item · G combine · Q drop. On a phone: joystick, drag to look,
-and the Use / Crouch / Run / Item / Combine / Drop buttons.
+item · F use item · G combine · Q drop · Esc pause · H controls. On a phone:
+joystick, drag to look, and the Use / Crouch / Run / Item / Combine / Drop
+buttons. The **?** button in the game's top bar lists what every key or
+button does.
 
 ### On a phone
 

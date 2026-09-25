@@ -38,6 +38,7 @@ export const BOSS = {
   PEE_ALERT_S: 5,
   PHONE_S: 25,
   SEARCH_S: 22,
+  LOCK_S: 3, // at the door, locking it back up
   LOOK_S: 3.2,
   // Eyes
   CABIN_RANGE: 15 * M,
@@ -55,7 +56,10 @@ export const BOSS = {
   WALL_MUFFLE: 0.8, // through walls and doors a noise carries this much as far
 };
 
-const WALKING_MODES = new Set(["round", "washroom", "investigate", "search", "return"]);
+const WALKING_MODES = new Set(["round", "washroom", "investigate", "search", "return", "relock"]);
+
+// Where he stands to lock each door again — on the inside, facing it.
+const LOCK_AT = { wooden: [16.9, 8.9], gate: [16.9, 5.7] };
 
 export class BossBrain {
   constructor(map = new BankMap(), random = Math.random) {
@@ -157,6 +161,15 @@ export class BossBrain {
     ]);
   }
 
+  startRelock(id) {
+    if (this.mode === "alerted") this.emit("standUp");
+    this.peeing = false;
+    this.setPlan("relock", [
+      ...this.leaveCabinSteps(),
+      { ...cellPoint(LOCK_AT[id]), action: "lockDoor", face: -Math.PI / 2, door: id },
+    ]);
+  }
+
   startSearch(fromX = this.x, fromY = this.y) {
     this.searchLeft = BOSS.SEARCH_S;
     this.wantsWord = true;
@@ -207,6 +220,8 @@ export class BossBrain {
       if (loud) this.timer = Math.min(this.timer, BOSS.ALERT_LOUD_S);
       return true;
     }
+    // On his way to lock a door: that comes first.
+    if (this.mode === "relock") return true;
     // Already on his feet: straight there.
     this.say(loud ? "YEH KYA THA?!" : "Yeh kya awaaz thi?", loud ? "shout" : "normal");
     this.startInvestigate();
@@ -259,17 +274,18 @@ export class BossBrain {
       return this.result(true);
     }
 
-    // --- doors he can see standing open, or a broken lock
-    if (!this.peeing && world.doors) {
+    // --- doors he can see standing open, or a broken lock: he goes over
+    // and locks them himself (see runAction), then looks for whoever did it.
+    if (!this.peeing && world.doors && this.mode !== "relock") {
       for (const door of world.doors) {
         if (!door.tampered) continue;
         const d = Math.hypot(door.x - this.x, door.y - this.y);
         if (d > 11 * M || !this.inView(door.x, door.y, BOSS.FOV)) continue;
         if (!this.map.hasLineOfSight(this.x, this.y, door.x, door.y)) continue;
-        this.emit("relock", { id: door.id });
         this.say("Yeh darwaza kisne khola?! Koi bhaagne ki koshish kar raha hai!", "shout");
+        this.emit("spottedDoor", { id: door.id });
         this.suspicion = Math.min(4, this.suspicion + 1);
-        if (this.mode !== "search") this.startSearch(door.x, door.y);
+        this.startRelock(door.id);
         break;
       }
     }
@@ -357,7 +373,7 @@ export class BossBrain {
       this.path = this.map.findPath(this.x, this.y, node.x, node.y, BOSS.RADIUS);
       if (!this.path.length) this.path = [{ x: node.x, y: node.y }];
     }
-    const speed = this.mode === "search" || this.mode === "investigate" ? BOSS.HURRY : BOSS.WALK;
+    const speed = this.mode === "search" || this.mode === "investigate" || this.mode === "relock" ? BOSS.HURRY : BOSS.WALK;
     const next = this.path[0];
     const dx = next.x - this.x;
     const dy = next.y - this.y;
@@ -382,8 +398,8 @@ export class BossBrain {
       this.plan.shift();
       return;
     }
-    const durations = { look: BOSS.LOOK_S, glance: 1.8, checkDoors: 2.6, pee: BOSS.PEE_S, checkDesk: 1.1, sit: 0 };
-    this.action = { type: node.action, t: durations[node.action] ?? 1, face: node.face, base: this.angle };
+    const durations = { look: BOSS.LOOK_S, glance: 1.8, checkDoors: 2.6, pee: BOSS.PEE_S, checkDesk: 1.1, sit: 0, lockDoor: BOSS.LOCK_S };
+    this.action = { type: node.action, t: durations[node.action] ?? 1, face: node.face, base: this.angle, door: node.door };
     if (node.action === "pee") {
       this.peeing = true;
       this.emit("pee");
@@ -400,7 +416,7 @@ export class BossBrain {
       // Look left, look right: a slow scan of the room.
       const phase = Math.sin(action.t * 1.9);
       this.angle = action.base + phase * 1.1;
-    } else if (type === "checkDoors" || type === "pee") {
+    } else if (type === "checkDoors" || type === "pee" || type === "lockDoor") {
       if (action.face !== undefined) this.turnTo(action.face, dt, 4);
     } else if (type === "checkDesk") {
       this.faceToward(SPOTS.playerChair.x, SPOTS.playerChair.y, dt);
@@ -413,6 +429,14 @@ export class BossBrain {
     if (type === "pee") {
       this.peeing = false;
       this.emit("flush");
+    } else if (type === "lockDoor") {
+      // Only if he actually got there: a door shut in his face on the way
+      // (the path ending short) leaves him locking nothing.
+      if (Math.hypot(this.x - node.x, this.y - node.y) < 1.5 * M) {
+        this.emit("relock", { id: action.door });
+        this.say("Ab koi nahi niklega. Aur jisne khola — main dhoondh ke rahunga.", "shout");
+      }
+      this.startSearch(this.x, this.y);
     } else if (type === "checkDesk") {
       if (!player.seated) {
         this.say("Sharma kahan gaya?! SHARMA!", "shout");

@@ -49,6 +49,22 @@ const STEP_NOISE = { walk: 0.07, run: 0.3, crouch: 0 };
 // Where you stand to work each door's main action, and the gadgets you can
 // set off as decoys. In grid cells.
 const DOOR_POINTS = { wooden: [16.9, 7.5], gate: [16.9, 4.5], shutter: [16.9, 0.55] };
+// Your phone, when it isn't in your bag.
+const PHONE_PLACES = {
+  drawer: {
+    short: "in Sir's drawer",
+    nag: "Not without your phone! It's locked in Sir's desk drawer — find the small key. How else will he find out you've quit?",
+  },
+  almirah: {
+    short: "in Sir's almirah",
+    nag: "Not without your phone! Sir put it in his almirah. Go and get it.",
+  },
+  floor: {
+    short: "left behind",
+    nag: "Not without your phone! You left it lying inside — go back for it.",
+  },
+};
+
 const DECOYS = [
   { id: "photocopier", at: [20.1, 18.35], label: "Print 50 copies of the circular", cooldown: 40 },
   { id: "landline", at: [26.2, 9.65], label: "Ring Sir's extension from the enquiry phone", cooldown: 60 },
@@ -131,6 +147,7 @@ export class JugaadGame {
       quit: $("#solo-quit"),
       leave: $("#solo-leave"),
       pauseButton: $("#solo-pause"),
+      helpButton: $("#solo-help"),
       pause: $("#pause"),
       pauseCard: $("#pause .pause-card"),
       pauseEyebrow: $("#pause-eyebrow"),
@@ -149,8 +166,9 @@ export class JugaadGame {
     // Leaving (or starting over) throws the shift away, so it asks first.
     this.el.leave.addEventListener("click", () => this.pause("leave"));
     this.el.pauseButton.addEventListener("click", () => this.pause("pause"));
+    this.el.helpButton.addEventListener("click", () => this.pause("help"));
     this.el.pausePrimary.addEventListener("click", () => {
-      if (this.pauseMode === "pause") this.resume();
+      if (this.pauseMode === "pause" || this.pauseMode === "help") this.resume();
       else this.pause("pause");
     });
     this.el.pauseRestart.addEventListener("click", () => {
@@ -363,8 +381,8 @@ export class JugaadGame {
     const steps = [
       [3500, "You're at your desk, looking busy. Sir watches the floor from his glass cabin — mostly he stares at his screen."],
       [10000, laptop
-        ? "Press E (or just walk) to get up. Hold E to search drawers, bags and almirahs. C to crouch behind desks."
-        : "Walk to get up. Hold Use to search drawers, bags and almirahs. Crouch to hide behind desks."],
+        ? "Press E (or just walk) to get up. Hold E to search drawers, bags and almirahs. C to crouch behind desks. H shows all the controls."
+        : "Walk to get up. Hold Use to search drawers, bags and almirahs. Crouch to hide behind desks. Tap ? (top right) for all the controls."],
       [18000, "Every minute Sir walks a round past your desk. Every other time he goes to the loo instead — then his cabin is empty."],
       [26000, "Make a noise and he'll shout \"Kaun hai?!\" — you then have 10–15 seconds to get back in your chair. Get caught and it's a thappad."],
     ];
@@ -415,6 +433,11 @@ export class JugaadGame {
       if (key === "escape" && performance.now() - (this.lockLostAt || 0) < 400) return true;
       if (this.userPaused) this.resume();
       else this.pause("pause");
+      return true;
+    }
+    if (key === "h" || key === "?") {
+      if (this.userPaused && this.pauseMode === "help") this.resume();
+      else this.pause("help");
       return true;
     }
     if (this.userPaused) return true;
@@ -677,8 +700,18 @@ export class JugaadGame {
     this.aimAtWork(dt);
     this.updateHud();
 
-    // Under the shutter and out.
-    if (this.doors.shutter.open && this.player.y < -TILE * 0.35) this.endRun(true);
+    // Under the shutter and out — with your phone, or the story has no
+    // ending: it's how Sir finds out you've quit.
+    const phone = this.doors.shutter.open && this.player.y < 6 ? this.phoneWhere() : null;
+    if (phone) {
+      this.player.y = 6;
+      if (now - (this.phoneNagAt || -99) > 5) {
+        this.phoneNagAt = now;
+        this.flash(PHONE_PLACES[phone].nag, 5000, 2);
+      }
+    } else if (this.doors.shutter.open && this.player.y < -TILE * 0.35) {
+      this.endRun(true);
+    }
   }
 
   moveAxis(dx, dy, crouching) {
@@ -807,6 +840,11 @@ export class JugaadGame {
         this.stats.searched += 1;
         this.flash("He found your chair empty. He's looking for you — get back and sit down!", 5000);
         break;
+      case "spottedDoor": {
+        const name = DOORS.find((d) => d.id === e.id).name.toLowerCase();
+        this.flash(`Sir saw the ${name} ${this.doors[e.id].broken ? "tampered with" : "open"} — he's coming to lock ${e.id === "wooden" ? "them" : "it"}! Don't be on the other side.`, 6000);
+        break;
+      }
       case "relock":
         this.relockDoor(e.id, true);
         break;
@@ -828,7 +866,7 @@ export class JugaadGame {
     this.floorItems = this.floorItems.filter((f) => f !== phone);
     this.contents["boss-drawer"].push("phone");
     this.subtitle("Yeh kiska phone hai?! …Jama. Mere drawer mein.", "shout");
-    this.flash("Sir took your phone and locked it in his desk drawer.", 5000);
+    this.flash("Sir took your phone and locked it in his desk drawer. You're not leaving without it — find the small key.", 6000);
   }
 
   animateBoss(dt, now) {
@@ -838,10 +876,11 @@ export class JugaadGame {
     else if (b.mode === "phone") pose = "phone";
     else if (b.mode === "alerted") pose = b.peeing ? "pee" : b.timer > 1.2 ? "sit" : "stand";
     else if (b.peeing) pose = "pee";
+    else if (b.action?.type === "lockDoor") pose = "reach";
     else if (b.moving) pose = "walk";
-    const angry = ["alerted", "search", "investigate", "confront"].includes(b.mode);
+    const angry = ["alerted", "search", "investigate", "confront", "relock"].includes(b.mode);
     let mark = null;
-    if (b.mode === "confront" || b.mode === "search") mark = "!";
+    if (b.mode === "confront" || b.mode === "search" || b.mode === "relock") mark = "!";
     else if (b.mode === "alerted" || b.noticing) mark = b.noticing ? "?" : "!";
     else if (b.mode === "phone") mark = "z";
     this.bossBody.setMark(mark);
@@ -852,7 +891,7 @@ export class JugaadGame {
       headTurn: b.headTurn,
       pose,
       moving: b.moving,
-      speed: b.mode === "search" || b.mode === "investigate" ? 1.3 : 1,
+      speed: b.mode === "search" || b.mode === "investigate" || b.mode === "relock" ? 1.3 : 1,
       dt,
       time: now,
       angry,
@@ -880,6 +919,14 @@ export class JugaadGame {
       return;
     }
     const door = DOORS.find((d) => d.id === id);
+    if (seenByHim) {
+      // The door swinging shut (or the gate rattling across), then the lock.
+      if (this.doors[id].open) {
+        if (id === "wooden") this.sound.woodenDoors(false);
+        else this.sound.gateSlide(false);
+      }
+      this.sound.unlock();
+    }
     this.doors[id] = { open: false, broken: false, done: Object.fromEntries(door.steps.map((s) => [s.id, false])) };
     this.map.setDoorOpen(id, false);
     this.renderDoors();
@@ -1242,6 +1289,8 @@ export class JugaadGame {
     if (door.id === "shutter") {
       this.flash(loudness >= 0.9 ? "It's up — and he definitely heard that! Crouch (C) and crawl under, NOW!" : "The shutter's up, half way. Crouch (C) and crawl out under it.", 6000);
       if (loudness >= 0.9) this.subtitle("SHUTTER?! RUKO! RUKOOO!", "shout");
+      const phone = this.phoneWhere();
+      if (phone) this.flash(`The shutter's up — but your phone is ${PHONE_PLACES[phone].short}. You need it before you go.`, 6000, 2);
     } else if (opening && door.id === "wooden") {
       this.hintOnce("close", "Doors left open are the first thing Sir notices. Pull them shut (E) when you head back.");
     }
@@ -1603,6 +1652,11 @@ export class JugaadGame {
   // ------------------------------------------------------------------- HUD
 
   updateHud() {
+    const phone = this.phoneWhere();
+    if (phone !== this.hud.phone) {
+      this.hud.phone = phone;
+      this.renderDoors();
+    }
     // With a mouse, looking needs the pointer captured, and the capture is
     // gone after every pause and cutscene until the next click.
     const needsClick = this.finePointer && !this.look.locked && !this.slap && !this.runOver;
@@ -1662,6 +1716,8 @@ export class JugaadGame {
         return { cls: "danger", text: "Sir is checking the noise" };
       case "search":
         return { cls: "danger", text: "Sir is looking for you!" };
+      case "relock":
+        return { cls: "danger", text: b.action?.type === "lockDoor" ? "Sir is locking the door again" : "Sir is going to lock the door!" };
       case "return":
         return { cls: "warn", text: "Sir walking back to his cabin" };
       default:
@@ -1731,6 +1787,31 @@ export class JugaadGame {
       li.append(steps);
       el.append(li);
     }
+    // The phone is how he hears you've quit: no leaving without it.
+    const phone = this.phoneWhere();
+    if (phone) {
+      const li = document.createElement("li");
+      li.className = "missing";
+      const title = document.createElement("strong");
+      title.textContent = "Your phone ";
+      const where = document.createElement("span");
+      where.className = "hud-phone-where";
+      where.textContent = PHONE_PLACES[phone].short;
+      title.append(where);
+      li.append(title);
+      el.append(li);
+    }
+  }
+
+  // Where your phone is when it isn't in your bag: null, "drawer",
+  // "almirah" or "floor".
+  phoneWhere() {
+    if (this.inventory.some((i) => i.id === "phone")) return null;
+    if (this.floorItems.some((f) => f.item.id === "phone")) return "floor";
+    for (const [id, place] of [["boss-drawer", "drawer"], ["boss-almirah", "almirah"]]) {
+      if (this.contents[id]?.includes("phone")) return place;
+    }
+    return "floor";
   }
 
   showPrompt(label, sub = "", progress = null) {
@@ -1907,8 +1988,9 @@ export class JugaadGame {
 
   // ---------------------------------------------------------------- pause
 
-  // mode: "pause" (the chai break), or "leave" / "restart" — the same card
-  // asking whether you really want to throw this shift away.
+  // mode: "pause" (the chai break), "help" (just the controls), or "leave" /
+  // "restart" — the same card asking whether you really want to throw this
+  // shift away.
   pause(mode = "pause") {
     if (!this.active || this.runOver) return;
     if (!this.userPaused) {
@@ -1924,6 +2006,7 @@ export class JugaadGame {
     this.pauseMode = mode;
     const texts = {
       pause: ["Chai break", "Paused", "Motu Sir is frozen mid-sip. Take your time.", "Resume"],
+      help: ["Controls", "Kaunsa button kya karta hai?", "The game waits while you read.", "Back to work"],
       leave: ["Leave the bank?", "Chhod ke jaa rahe ho?", "You'll lose this shift — every lock you've opened and everything in your bag.", "Stay"],
       restart: ["Start over?", "Phir se shuru?", "The doors lock again and your bag empties. Motu Sir gets a fresh cup of chai.", "Keep playing"],
     }[mode];
@@ -1934,8 +2017,10 @@ export class JugaadGame {
     this.el.pausePrimary.textContent = primary;
     this.el.pauseRestart.textContent = mode === "restart" ? "Yes, start over" : "Restart the shift";
     this.el.pauseLeave.textContent = mode === "leave" ? "Yes, leave" : "Leave to title";
-    this.el.pauseRestart.classList.toggle("hidden", mode === "leave");
-    this.el.pauseLeave.classList.toggle("hidden", mode === "restart");
+    this.el.pauseRestart.classList.toggle("hidden", mode === "leave" || mode === "help");
+    this.el.pauseLeave.classList.toggle("hidden", mode === "restart" || mode === "help");
+    this.el.pauseCard.classList.toggle("with-controls", mode === "pause" || mode === "help");
+    this.el.pauseCard.classList.toggle("help", mode === "help");
     this.el.pauseCard.classList.toggle("confirm", mode !== "pause");
     this.el.pause.classList.remove("hidden");
     this.el.pausePrimary.focus?.();

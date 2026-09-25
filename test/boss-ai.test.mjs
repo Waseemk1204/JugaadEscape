@@ -126,3 +126,48 @@ test("the loud jugaads at the front doors are heard from his chair", () => {
   const brain = new BossBrain(new BankMap(), seeded(8));
   assert.equal(brain.hearNoise(16.9 * TILE, 7.5 * TILE, 0.22), false);
 });
+
+test("a door he sees standing open, he walks over and locks himself", () => {
+  const map = new BankMap();
+  map.setDoorOpen("wooden", true);
+  const brain = new BossBrain(map, seeded(9));
+  // Out on the floor, looking up the hall at the open wooden doors.
+  brain.mode = "round";
+  brain.plan = [{ x: 16.9 * TILE, y: 12 * TILE }];
+  brain.x = 16.9 * TILE;
+  brain.y = 12 * TILE;
+  brain.angle = -Math.PI / 2;
+  const door = { id: "wooden", x: 16.9 * TILE, y: 7.5 * TILE, tampered: true };
+  const first = run(brain, 0.1, seated, { doors: [door] });
+  // Not locked at a glance: he is on his way.
+  assert.ok(first.some((e) => e.type === "spottedDoor"));
+  assert.ok(!first.some((e) => e.type === "relock"));
+  assert.equal(brain.mode, "relock");
+  // As in the game: once he has locked it, it is no longer open.
+  const log = [];
+  for (let t = 0; t < 10; t += 1 / 30) {
+    for (const e of brain.update(1 / 30, seated, { doors: [door] }).events) {
+      log.push({ t, ...e });
+      if (e.type === "relock") door.tampered = false;
+    }
+  }
+  const lock = log.find((e) => e.type === "relock");
+  assert.ok(lock, "never locked it");
+  assert.ok(lock.t > BOSS.LOCK_S - 0.1, "locked before spending time at the door");
+  assert.equal(log.filter((e) => e.type === "relock").length, 1);
+  // Then he goes looking for whoever opened it.
+  assert.equal(brain.mode, "search");
+});
+
+test("a door shut in his face on the way leaves nothing to lock", () => {
+  const map = new BankMap();
+  map.setDoorOpen("wooden", true);
+  const brain = new BossBrain(map, seeded(10));
+  brain.x = 16.9 * TILE;
+  brain.y = 12 * TILE;
+  brain.startRelock("gate");
+  map.setDoorOpen("wooden", false);
+  const log = run(brain, 12);
+  assert.ok(!log.some((e) => e.type === "relock"));
+  assert.equal(brain.mode, "search");
+});

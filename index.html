@@ -85,7 +85,7 @@
           </aside>
         </div>
 
-        <p class="title-keys">WASD move · Shift run · C crouch · hold E search / use · 1–5 pick · F use item · G combine · Q drop</p>
+        <p class="title-keys">WASD move · Shift run · C crouch · hold E search / use · 1–5 pick · F use item · G combine · Q drop · H all controls</p>
       </section>
 
       <!-- Touch controls (joystick and action buttons) -->
@@ -151,6 +151,7 @@
               <button class="icon-button js-fullscreen" type="button" title="Full screen" aria-label="Full screen" aria-pressed="false">
                 <span class="fullscreen-icon"></span>
               </button>
+              <button id="solo-help" class="icon-button help" type="button" title="Controls (H)" aria-label="Controls">?</button>
               <button id="solo-pause" class="icon-button" type="button" title="Pause (Esc)" aria-label="Pause">
                 <span class="pause-icon"></span>
               </button>
@@ -226,6 +227,32 @@
             <p id="pause-eyebrow" class="eyebrow">Chai break</p>
             <h2 id="pause-title">Paused</h2>
             <p id="pause-body" class="muted">Motu Sir is frozen mid-sip. Take your time.</p>
+            <div id="pause-controls" class="pause-controls">
+              <p class="controls-label">Controls</p>
+              <dl class="controls-list keys-only">
+                <div><dt><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd></dt><dd>Move</dd></div>
+                <div><dt><kbd>Mouse</kbd></dt><dd>Look around (click the game first)</dd></div>
+                <div><dt>hold <kbd>E</kbd></dt><dd>Search, pick locks, open doors, sit</dd></div>
+                <div><dt><kbd>1</kbd>–<kbd>5</kbd></dt><dd>Take a bag item in hand</dd></div>
+                <div><dt><kbd>Shift</kbd></dt><dd>Run on / off (noisy)</dd></div>
+                <div><dt><kbd>C</kbd></dt><dd>Crouch on / off — hide behind desks</dd></div>
+                <div><dt><kbd>F</kbd></dt><dd>Use the item in hand: phone alarm, gulel</dd></div>
+                <div><dt><kbd>G</kbd></dt><dd>Combine two things into a tool</dd></div>
+                <div><dt><kbd>Q</kbd></dt><dd>Drop the item in hand</dd></div>
+                <div><dt><kbd>Esc</kbd> <kbd>H</kbd></dt><dd>Pause · these controls</dd></div>
+              </dl>
+              <dl class="controls-list touch-only">
+                <div><dt><span class="control-chip joy"></span></dt><dd>Joystick: move</dd></div>
+                <div><dt><span class="control-chip">☝</span></dt><dd>Drag the screen: look around</dd></div>
+                <div><dt><span class="control-chip"><span class="hand-icon"></span></span></dt><dd><b>Use</b> (hold): search, pick locks, open doors, sit</dd></div>
+                <div><dt><span class="control-chip slot">1</span></dt><dd>Tap a bag slot: take it in hand</dd></div>
+                <div><dt><span class="control-chip"><span class="run-icon"></span></span></dt><dd><b>Run</b> on / off (noisy)</dd></div>
+                <div><dt><span class="control-chip"><span class="crouch-icon"></span></span></dt><dd><b>Crouch</b> on / off — hide behind desks</dd></div>
+                <div><dt><span class="control-chip">✦</span></dt><dd><b>Item</b>: use what's in hand — phone alarm, gulel</dd></div>
+                <div><dt><span class="control-chip">＋</span></dt><dd><b>Combine</b> two things into a tool</dd></div>
+                <div><dt><span class="control-chip">⤓</span></dt><dd><b>Drop</b> the item in hand</dd></div>
+              </dl>
+            </div>
             <div class="pause-actions">
               <button id="pause-primary" class="primary-button" type="button">Resume</button>
               <button id="pause-restart" class="secondary-button" type="button">Restart the shift</button>
