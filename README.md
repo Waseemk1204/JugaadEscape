@@ -52,7 +52,7 @@ lying around — without him catching you.
 
 Controls: WASD move · Shift run · C crouch · hold E search / use · 1–5 pick
 item · F use item · G combine · Q drop. On a phone: joystick, drag to look,
-and the Use / Crouch / Run / Item / Combine buttons.
+and the Use / Crouch / Run / Item / Combine / Drop buttons.
 
 ### On a phone
 

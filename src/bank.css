@@ -110,6 +110,11 @@
   white-space: pre-wrap;
 }
 
+/* The count is for the compact phone list; the full list spells it out. */
+.hud-door-count {
+  display: none;
+}
+
 /* ------------------------------------------------------ being watched */
 
 .hud-eye {
@@ -440,6 +445,11 @@
   bottom: 212px;
 }
 
+#drop-button {
+  right: 206px;
+  bottom: 44px;
+}
+
 #crouch-button {
   right: 122px;
   bottom: 110px;
@@ -723,8 +733,29 @@ body.cinematic .touch-controls,
     padding: 5px 10px;
   }
 
+  /* Phones sideways: the doors as a compact column of counts. */
   .hud-doors {
+    display: grid;
+    top: calc(max(8px, var(--safe-top)) + 50px);
+    left: max(8px, var(--safe-left));
+    gap: 2px;
+    padding: 5px 8px;
+    border-radius: 9px;
+    font-size: 10px;
+  }
+
+  .hud-doors strong {
+    font-size: 10px;
+  }
+
+  .hud-door-steps {
     display: none;
+  }
+
+  .hud-door-count {
+    display: inline;
+    color: var(--marigold);
+    font-variant-numeric: tabular-nums;
   }
 
   .hud-bag {

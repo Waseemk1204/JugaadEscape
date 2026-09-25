@@ -139,6 +139,7 @@ export class JugaadGame {
       pauseLeave: $("#pause-leave"),
       useButton: $("#use-button"),
       combineButton: $("#combine-button"),
+      dropButton: $("#drop-button"),
       interactLabel: $("#interact-label"),
     };
     this.el.retry.addEventListener("click", () => this.restart());
@@ -170,6 +171,10 @@ export class JugaadGame {
     this.el.combineButton?.addEventListener("pointerdown", (e) => {
       e.preventDefault();
       this.combineItems();
+    });
+    this.el.dropButton?.addEventListener("pointerdown", (e) => {
+      e.preventDefault();
+      this.dropItem();
     });
     this.el.inventory.addEventListener("pointerdown", (e) => {
       const slot = e.target.closest("[data-slot]");
@@ -343,6 +348,9 @@ export class JugaadGame {
     this.brain.reset();
     this.lastBoss = { x: this.brain.x, y: this.brain.y };
     this.el.seated.classList.remove("hidden");
+    // Whatever key skipped the intro is still down: it must not also count
+    // as "get up" on the first frame of the shift.
+    this.heldLastFrame = true;
     this.tutorial();
   }
 
@@ -356,7 +364,7 @@ export class JugaadGame {
       [18000, "Every minute Sir walks a round past your desk. Every other time he goes to the loo instead — then his cabin is empty."],
       [26000, "Make a noise and he'll shout \"Kaun hai?!\" — you then have 10–15 seconds to get back in your chair. Get caught and it's a thappad."],
     ];
-    this.tutorialTimers = steps.map(([ms, text]) => setTimeout(() => this.active && !this.runOver && this.flash(text, 7000), ms));
+    this.tutorialTimers = steps.map(([ms, text]) => setTimeout(() => this.active && !this.runOver && this.flash(text, 7000, 0), ms));
   }
 
   // Borrow the shared input for as long as the shift lasts.
@@ -371,6 +379,15 @@ export class JugaadGame {
       this.pitch = Math.max(-1.25, Math.min(1.25, this.pitch - dy));
     };
     this.input.onKey = (key) => this.onKey(key);
+    // With the mouse captured for looking, the browser spends the first Esc
+    // on releasing it and often never passes the key on. So losing the
+    // capture mid-play is itself the pause.
+    this.savedLockChange = this.look.onLockChange;
+    this.look.onLockChange = (locked) => {
+      if (locked || !this.active || this.userPaused || this.runOver || this.cinematic || this.paused) return;
+      this.lockLostAt = performance.now();
+      this.pause("pause");
+    };
     this.onResize = () => this.resize();
     window.addEventListener("resize", this.onResize);
     window.visualViewport?.addEventListener("resize", this.onResize);
@@ -381,6 +398,7 @@ export class JugaadGame {
     this.bound = false;
     this.look.onLook = this.savedLook;
     this.input.onKey = this.savedKey;
+    this.look.onLockChange = this.savedLockChange || (() => {});
     window.removeEventListener("resize", this.onResize);
     window.visualViewport?.removeEventListener("resize", this.onResize);
   }
@@ -388,6 +406,9 @@ export class JugaadGame {
   onKey(key) {
     if (!this.active) return false;
     if ((key === "escape" || key === "p") && !this.runOver) {
+      // The same Esc that released the mouse (and so paused) may arrive
+      // here too — don't let it unpause straight away.
+      if (key === "escape" && performance.now() - (this.lockLostAt || 0) < 400) return true;
       if (this.userPaused) this.resume();
       else this.pause("pause");
       return true;
@@ -837,7 +858,14 @@ export class JugaadGame {
   // He saw a door standing open (or a broken padlock) and locked it again.
   relockDoor(id, seenByHim = false) {
     const room = roomAt(this.player.x, this.player.y);
+    // Standing in the doorway itself counts too: shutting it would leave you
+    // inside the closed door.
+    const wasOpen = this.map.doors[id];
+    this.map.setDoorOpen(id, false);
+    const inDoorway = this.map.isBlocked(this.player.x, this.player.y, PLAYER_RADIUS);
+    this.map.setDoorOpen(id, wasOpen);
     const beyond =
+      inDoorway ||
       (id === "wooden" && ["landing", "vestibule", "street"].includes(room)) ||
       (id === "gate" && ["vestibule", "street"].includes(room));
     if (seenByHim && beyond) {
@@ -1387,9 +1415,20 @@ export class JugaadGame {
     if (!item) return;
     this.inventory.splice(this.selected, 1);
     this.selected = Math.max(0, Math.min(this.selected, this.inventory.length - 1));
+    // Just in front of you — unless that is inside a wall or a desk, in which
+    // case as far forward as is clear, down to at your feet.
     const fx = -Math.sin(this.yaw);
     const fy = -Math.cos(this.yaw);
-    this.floorItems.push({ item, x: this.player.x + fx * 14, y: this.player.y + fy * 14 });
+    let at = { x: this.player.x, y: this.player.y };
+    for (let d = 16; d >= 0; d -= 2) {
+      const x = this.player.x + fx * d;
+      const y = this.player.y + fy * d;
+      if (!this.map.isBlocked(x, y, 5)) {
+        at = { x, y };
+        break;
+      }
+    }
+    this.floorItems.push({ item, ...at });
     this.flash(`Dropped ${ITEMS[item.id].name}.`, 2000);
     this.renderInventory();
   }
@@ -1492,6 +1531,7 @@ export class JugaadGame {
     this.input.syncStanceButtons();
     this.yaw = 0;
     this.pitch = -0.08;
+    this.heldLastFrame = true; // same after a slap: no instant stand-up
     this.el.seated.classList.remove("hidden");
     this.renderInventory();
     this.renderDoors();
@@ -1631,7 +1671,7 @@ export class JugaadGame {
       el.append(slot);
     }
     const selected = this.inventory[this.selected];
-    this.el.itemNote.textContent = selected ? ITEMS[selected.id].note : "";
+    this.el.itemNote.textContent = selected ? this.forTouch(ITEMS[selected.id].note) : "";
   }
 
   renderDoors() {
@@ -1644,6 +1684,12 @@ export class JugaadGame {
       li.className = state.open ? "open" : unlocked ? "unlocked" : "";
       const title = document.createElement("strong");
       title.textContent = `${door.name}${state.open ? " · open" : unlocked ? " · unlocked" : ""}`;
+      // The short form, for phones: required steps done out of total.
+      const required = door.steps.filter((st) => !st.optional);
+      const count = document.createElement("span");
+      count.className = "hud-door-count";
+      count.textContent = state.open ? "open" : `${required.filter((st) => state.done[st.id]).length}/${required.length}`;
+      title.append(" ", count);
       li.append(title);
       const steps = document.createElement("span");
       steps.className = "hud-door-steps";
@@ -1672,7 +1718,13 @@ export class JugaadGame {
     if (progress !== null) this.el.holdFill.style.transform = `scaleX(${Math.min(1, progress)})`;
   }
 
-  flash(message, ms = 4500) {
+  // priority: tutorial tips are 0 and wait their turn; anything the game
+  // needs to tell you right now is 1 and always shows.
+  flash(message, ms = 4500, priority = 1) {
+    const now = performance.now();
+    if (priority < (this.flashPriority ?? 0) && now < (this.flashUntil ?? 0)) return;
+    this.flashPriority = priority;
+    this.flashUntil = now + ms;
     this.el.hint.textContent = this.forTouch(message);
     this.el.hint.classList.remove("faded");
     clearTimeout(this.flashTimer);
@@ -1688,6 +1740,9 @@ export class JugaadGame {
       .replace(/Pull them shut \(E\)/g, "Pull them shut (Use)")
       .replace(/1–5 picks one; G combines two things into a better tool; F uses it\./, "Tap a slot to pick it; Combine makes a better tool out of two; Item uses it.")
       .replace(/press F/gi, "tap Item")
+      .replace(/press ([1-5])\b/gi, "tap slot $1")
+      .replace(/\bhold E\b/gi, "hold Use")
+      .replace(/\bPress E\b/g, "Tap Use")
       .replace(/ \((?:[A-Z]|1–5)\)/g, "");
   }
 

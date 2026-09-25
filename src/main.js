@@ -95,6 +95,9 @@ function goLandscape() {
 }
 
 function play() {
+  // One shift at a time: Enter on a focused Start button would otherwise fire
+  // both the shortcut below and the button's own click.
+  if (game.active) return;
   // Audio can only start from a click or a tap.
   audio.unlock();
   goLandscape();
@@ -148,7 +151,9 @@ document.addEventListener("webkitfullscreenchange", syncFullscreen);
 
 $("#title-start").addEventListener("click", play);
 window.addEventListener("keydown", (event) => {
-  if (event.key === "Enter" && !game.active) play();
+  // A focused button handles its own Enter.
+  if (event.target?.closest?.("button")) return;
+  if (event.key === "Enter" && !game.active && !title.classList.contains("hidden")) play();
 });
 
 showTitle();
