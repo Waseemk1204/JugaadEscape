@@ -186,15 +186,25 @@ export class DoorVisuals {
   // --------------------------------------------------------------- update
 
   // `doors` is the game's door state: { wooden: { open, broken, done }, ... }
-  update(doors, dt) {
+  update(doors, dt, now = 0) {
     const ease = (key, target, rate) => {
       this.anim[key] += (target - this.anim[key]) * Math.min(1, dt * rate);
       return this.anim[key];
     };
 
+    // What the player is working on right now (set by the game while E is
+    // held): the door answers the tool.
+    const work = this.working;
+    const on = (door, step) => work && work.doorId === door && (!step || work.stepId === step);
+
     const w = ease("wooden", doors.wooden.open ? 1 : 0, 3);
-    for (const { hinge, side } of this.leaves) hinge.rotation.y = side < 0 ? -w * Math.PI * 0.46 : w * Math.PI * 0.46;
-    this.bolt.position.y = 2.56 - ease("bolt", doors.wooden.done.bolt ? 1 : 0, 6) * 0.13;
+    // Forcing the latch rattles both leaves in their frame.
+    const rattle = on("wooden", "latch") && work.p > 0.3 ? Math.sin(now * 38) * (work.kind === "blade" ? 0.012 : 0.005) : 0;
+    for (const { hinge, side } of this.leaves) hinge.rotation.y = (side < 0 ? -w * Math.PI * 0.46 : w * Math.PI * 0.46) + rattle * side;
+    // The tower bolt slides across as the umbrella yanks it.
+    const yank = on("wooden", "bolt") ? Math.max(0, (work.p - 0.78) / 0.22) : 0;
+    const bolt = ease("bolt", doors.wooden.done.bolt ? 1 : 0, 6);
+    this.bolt.position.y = 2.56 - Math.max(bolt, yank) * 0.13;
 
     const g = ease("gate", doors.gate.open ? 1 : 0, 1.6);
     for (const { half, post, side } of this.gateHalves) {
@@ -205,11 +215,30 @@ export class DoorVisuals {
       post.position.x = side < 0 ? width : -width;
     }
     this.placeLock(this.gateLock, doors.gate.done.padlock, doors.gate.broken, [cx(17) + (this.gateHalves[0].post.position.x - 3), 1.1, cx(4.5) + 0.05]);
+    this.shakeLock(this.gateLock, on("gate", "padlock") ? work : null, now);
 
     const s = ease("shutter", doors.shutter.open ? 1 : 0, 1.2);
     this.shutter.position.y = s * this.shutterLift;
     this.placeLock(this.shutterLocks[0], doors.shutter.done.lockLeft, doors.shutter.broken, [cx(13.8), 0.09, cx(0.45)]);
     this.placeLock(this.shutterLocks[1], doors.shutter.done.lockRight, doors.shutter.broken, [cx(20.2), 0.09, cx(0.45)]);
+    this.shakeLock(this.shutterLocks[0], on("shutter", "lockLeft") ? work : null, now);
+    this.shakeLock(this.shutterLocks[1], on("shutter", "lockRight") ? work : null, now);
+  }
+
+  // A padlock being worked on twitches on its hasp: small and quick for a
+  // pick, a hard jump for each extinguisher blow.
+  shakeLock(lock, work, now) {
+    if (!work) return;
+    if (work.kind === "smash") {
+      const cycle = (work.p * 2) % 1;
+      const hit = cycle > 0.72 && cycle < 0.85 ? (0.85 - cycle) / 0.13 : 0;
+      lock.rotation.z += hit * 0.9;
+      lock.position.y += hit * 0.03;
+      return;
+    }
+    const strength = work.kind === "picks" ? 0.12 : work.kind === "shim" ? 0.06 : 0.04;
+    lock.rotation.z += Math.sin(now * 42) * strength;
+    lock.rotation.x += Math.sin(now * 31) * strength * 0.5;
   }
 
   // Locked: hanging in place. Opened: hanging open, off to the side.

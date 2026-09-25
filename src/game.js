@@ -30,6 +30,10 @@ import { BankAudio } from "./bankaudio.js";
 import { EscapeScene, ESCAPE } from "./three/escape.js";
 import { IntroScene, LockupScene } from "./cutscenes.js";
 import { floorModel, heldModel, itemIcon } from "./three/items.js";
+import { WORK_HEIGHT, motionKind, TOOL_KINDS, toolPose, bodyMotion } from "./toolmotion.js";
+
+// Where the held tool rests, in camera space, when it is not doing anything.
+const HAND_REST = [0.21, -0.2, -0.42];
 
 const EYE = { STAND: 1.6, CROUCH: 0.98, SEATED: 1.18 };
 const SPEED = { WALK: 100, RUN: 150, CROUCH: 52 };
@@ -473,7 +477,8 @@ export class JugaadGame {
     this.world.update(now, dt);
     this.world.setClock(START_MINUTES + this.elapsed * GAME_MINUTES_PER_SECOND);
     this.world.setPropVisible("boss-keys", this.brain.away && !this.keysTaken);
-    this.doorVisuals.update(this.doors, dt);
+    this.doorVisuals.working = this.action?.doorId ? this.action : null;
+    this.doorVisuals.update(this.doors, dt, now);
     this.syncFloorItems(now);
     // While a scene plays it drives Sir and the camera itself.
     if (!this.cinematic) {
@@ -493,7 +498,7 @@ export class JugaadGame {
 
   // The selected item, in your right hand at the bottom of the screen. It
   // drops out of view and comes back up when you switch, bobs as you walk,
-  // and works away while you hold E on something.
+  // and — while you hold E — acts out the jugaad (src/toolmotion.js).
   updateHand(dt, now) {
     const selected = this.inventory[this.selected];
     const showing = !this.cinematic && !this.slap && !this.runOver && !this.paused && !this.player.seated;
@@ -506,16 +511,75 @@ export class JugaadGame {
       if (model) this.hand.add(model);
     }
     this.hand.visible = Boolean(this.handId && this.hand.children.length);
-    if (!this.hand.visible) return;
+    if (!this.hand.visible) {
+      this.handPose = null;
+      return;
+    }
     this.handRaise = Math.min(1, this.handRaise + dt * 4);
-    const ease = 1 - (1 - this.handRaise) ** 3;
+    const raise = 1 - (1 - this.handRaise) ** 3;
     const p = this.player;
     const walk = p.moving ? Math.sin(this.bob) * 0.012 : Math.sin(now * 1.4) * 0.004;
     const sway = p.moving ? Math.cos(this.bob * 0.5) * 0.01 : 0;
-    const working = this.hold ? Math.sin(now * 28) * 0.012 : 0;
-    const crouch = p.crouching ? 0.03 : 0;
-    this.hand.position.set(0.21 + sway, -0.2 - (1 - ease) * 0.28 + walk + crouch, -0.42 - (this.hold ? 0.06 : 0));
-    this.hand.rotation.set(working * 2, working * 3, working * 4);
+    const rest = [HAND_REST[0] + sway, HAND_REST[1] + walk + (p.crouching ? 0.03 : 0), HAND_REST[2]];
+
+    // The pose this frame: resting, or partway through a jugaad.
+    let want = { pos: rest, rot: [0, 0, 0], jitter: [0, 0, 0] };
+    const a = this.action;
+    if (a) {
+      const target = this.workPoint(a);
+      if (target) want = toolPose(a.kind, a.p, now, rest, target);
+      if (a.kind === "smash" && want.impactCycle >= 0 && want.impactCycle !== this.lastImpact) {
+        this.lastImpact = want.impactCycle;
+        this.sound.bang(a.x, a.y, 0.45);
+        this.sound.smash();
+        this.shake = Math.max(this.shake, 0.45);
+      }
+    } else {
+      this.lastImpact = -1;
+    }
+
+    // Ease towards it, so moves flow into one another; jitter rides on top.
+    if (!this.handPose) this.handPose = { pos: [...rest], rot: [0, 0, 0] };
+    const k = 1 - Math.exp(-dt * 14);
+    for (let i = 0; i < 3; i += 1) {
+      this.handPose.pos[i] += (want.pos[i] - this.handPose.pos[i]) * k;
+      this.handPose.rot[i] += (want.rot[i] - this.handPose.rot[i]) * k;
+    }
+
+    // One-off flourishes: the gulel's flick, a freshly made tool spinning in.
+    let shotZ = 0;
+    let shotY = 0;
+    let spin = 0;
+    if (this.handShot) {
+      const t = now - this.handShot.at;
+      if (this.handShot.kind === "flick") {
+        if (t < 0.15) shotZ = (t / 0.15) * 0.08;
+        else if (t < 0.25) shotZ = 0.08 - ((t - 0.15) / 0.1) * 0.2;
+        else shotZ = -0.12 * Math.max(0, 1 - (t - 0.25) / 0.25);
+        shotY = -shotZ * 0.3;
+        if (t > 0.5) this.handShot = null;
+      } else if (this.handShot.kind === "spin") {
+        spin = (1 - Math.min(1, t / 0.6)) ** 2 * Math.PI * 2;
+        if (t > 0.6) this.handShot = null;
+      }
+    }
+
+    const [x, y, z] = this.handPose.pos;
+    const [jx, jy, jz] = want.jitter;
+    this.hand.position.set(x + jx, y + jy - (1 - raise) * 0.28 + shotY, z + jz + shotZ);
+    this.hand.rotation.set(this.handPose.rot[0], this.handPose.rot[1] + spin, this.handPose.rot[2]);
+    // Up close at the lock, a tool at full hand size swamps the view.
+    const size = a && TOOL_KINDS.has(a.kind) ? 0.78 : 1;
+    this.hand.scale.setScalar(this.hand.scale.x + (size - this.hand.scale.x) * k);
+  }
+
+  // The work spot in camera space, pulled in along its sight line to arm's
+  // length — so the tool, drawn there, sits right over it on screen.
+  workPoint(a) {
+    const v = new THREE.Vector3(a.x * U, a.h, a.y * U);
+    this.camera.worldToLocal(v);
+    if (v.z > -0.05) return null;
+    return v.multiplyScalar(0.5 / v.length());
   }
 
   update(dt, now) {
@@ -555,6 +619,7 @@ export class JugaadGame {
     this.updateBoss(dt, now);
     if (this.slap || this.runOver) return;
     this.updateInteraction(dt);
+    this.aimAtWork(dt);
     this.updateHud();
 
     // Under the shutter and out.
@@ -900,6 +965,7 @@ export class JugaadGame {
   }
 
   updateInteraction(dt) {
+    this.action = null;
     // Seated: E stands you up; nothing else is in reach.
     if (this.player.seated) {
       this.target = null;
@@ -930,6 +996,7 @@ export class JugaadGame {
     if (this.input.holding) {
       if (!this.hold || this.hold.key !== info.key) this.hold = { key: info.key, t: 0 };
       this.hold.t += dt;
+      this.action = this.makeAction(target, info, Math.min(1, this.hold.t / info.time));
       if (info.busy) this.sound.busy(info.busy);
       if (this.hold.t >= info.time) {
         this.hold = null;
@@ -945,6 +1012,18 @@ export class JugaadGame {
     }
     this.heldLastFrame = this.input.holding;
     this.showPrompt(info.label, info.sub, this.hold ? this.hold.t / info.time : 0);
+  }
+
+  // What your hands are doing right now, and where: drives the tool's
+  // motion (src/toolmotion.js), the camera, and the door reacting.
+  makeAction(target, info, p) {
+    const kind = motionKind(target, info.way);
+    if (!kind) return null;
+    let point;
+    if (target.kind === "step") point = { ...cellPoint(target.step.at), h: WORK_HEIGHT[target.step.id] ?? 1 };
+    else if (target.kind === "door") point = { ...cellPoint(DOOR_POINTS[target.door.id]), h: 1.2 };
+    else point = { x: target.x, y: target.y, h: target.kind === "floor" ? 0.05 : 0.8 };
+    return { kind, p, ...point, doorId: target.door?.id ?? null, stepId: target.step?.id ?? null };
   }
 
   perform(target, info) {
@@ -1190,6 +1269,7 @@ export class JugaadGame {
     if (item.id === "gulel") {
       if (this.cooldowns.gulel > 0) return;
       this.cooldowns.gulel = 6;
+      this.handShot = { kind: "flick", at: performance.now() / 1000 };
       const hit = this.aimPoint(14 * 32);
       this.sound.flick(hit.x, hit.y);
       this.pending.push({ at: 0.3, x: hit.x, y: hit.y, loudness: 0.55 });
@@ -1198,6 +1278,20 @@ export class JugaadGame {
       return;
     }
     this.flash(`${ITEMS[item.id].name}: ${ITEMS[item.id].note}`, 4000);
+  }
+
+  // While a tool is working, your eyes follow it: up to the tower bolt, down
+  // to the shutter's floor locks.
+  aimAtWork(dt) {
+    const a = this.action;
+    if (!a || !TOOL_KINDS.has(a.kind)) return;
+    const dx = (a.x - this.player.x) * U;
+    const dz = (a.y - this.player.y) * U;
+    const yaw = Math.atan2(-dx, -dz);
+    const pitch = Math.atan2(a.h - this.eye, Math.max(0.3, Math.hypot(dx, dz)));
+    const k = Math.min(1, dt * 3.5);
+    this.yaw += ((((yaw - this.yaw) + Math.PI * 3) % (Math.PI * 2)) - Math.PI) * k;
+    this.pitch += (Math.max(-1.2, Math.min(1.2, pitch)) - this.pitch) * k;
   }
 
   // Where a straight line from your eyes first meets a wall or something tall.
@@ -1234,6 +1328,7 @@ export class JugaadGame {
     this.selected = this.inventory.findIndex((i) => i.uid === result.made.uid);
     this.stats.crafted += 1;
     this.sound.combine();
+    this.handShot = { kind: "spin", at: performance.now() / 1000 };
     this.flash(`Jugaad! ${ITEMS[result.recipe.a].name} + ${ITEMS[result.recipe.b].name} → ${ITEMS[result.made.id].name}. ${ITEMS[result.made.id].note}`, 6000);
     this.renderInventory();
   }
@@ -1372,8 +1467,24 @@ export class JugaadGame {
     const shake = this.shake ** 2;
     const sx = shake * Math.sin(now * 47) * 0.08;
     const sy = shake * Math.sin(now * 61 + 1.7) * 0.05;
-    this.camera.position.set(p.x * U + bobX + sx, this.eye + bobY + sy, p.y * U);
-    this.camera.rotation.set(this.pitch, this.yaw, shake * Math.sin(now * 39) * 0.05, "YXZ");
+    // Leaning into the work: a push on the doors, a heave on the shutter,
+    // a rummage through a drawer.
+    const body = this.action ? bodyMotion(this.action.kind, this.action.p, now) : null;
+    const want = body || { forward: 0, up: 0, pitch: 0, roll: 0, side: 0 };
+    if (!this.lean) this.lean = { forward: 0, up: 0, pitch: 0, roll: 0, side: 0 };
+    const k = 1 - Math.exp(-dt * 10);
+    for (const key of Object.keys(this.lean)) this.lean[key] += ((want[key] || 0) - this.lean[key]) * k;
+    const fx = -Math.sin(this.yaw);
+    const fz = -Math.cos(this.yaw);
+    const rx = Math.cos(this.yaw);
+    const rz = -Math.sin(this.yaw);
+    const lean = this.lean;
+    this.camera.position.set(
+      p.x * U + bobX + sx + fx * lean.forward + rx * lean.side,
+      this.eye + bobY + sy + lean.up,
+      p.y * U + fz * lean.forward + rz * lean.side,
+    );
+    this.camera.rotation.set(this.pitch + lean.pitch, this.yaw, shake * Math.sin(now * 39) * 0.05 + lean.roll, "YXZ");
   }
 
   // ------------------------------------------------------------------- HUD
