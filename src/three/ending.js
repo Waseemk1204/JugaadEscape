@@ -4,7 +4,8 @@
 //      road at night — the branch's own front, its blue board and the ATM
 //      glowing, shops and a chai tapri across the road, autos going both
 //      ways. You flag one down, climb in, and look back: Motu Sir is under the
-//      shutter, shaking his fist. The auto pulls away into the traffic.
+//      shutter, shaking his fist and promising to deal with you tomorrow.
+//      "Kal milenge toh na!" The auto pulls away into the traffic.
 //   2. Home. Your room: the fan, the lamp, the bed. The tie comes off.
 //   3. The phone. You tell Motu Sir the resignation is on his desk, he starts
 //      typing in capitals, you block him — and lie back with a sigh.
@@ -643,7 +644,7 @@ export class EndingScene {
 
     // Climb in.
     this.move(0.7, 1.4, -4.6, 2.4);
-    this.say("Ghar! Jaldi chalo — double paisa dunga!", "You", "shout");
+    this.say("Sector 12! Jaldi chalo — double paisa dunga!", "You", "shout");
     yield 1.2;
     // Settle in behind the driver, looking out over his shoulder.
     this.move(hero.position.x + 0.4, 1.32, -6.3, 3);
@@ -658,16 +659,16 @@ export class EndingScene {
     this.eyeRate = 2.4;
     this.watchBoss = true;
     yield 1.0;
-    this.say("SHARMAAA! Kal subah nau baje! NAU BAJE!", "Motu Sir", "shout");
+    this.say("Oyye! Tujhe toh kal bataata hoon!", "Motu Sir", "shout");
     this.audio.tone({ freq: 190, type: "sawtooth", duration: 0.5, gain: 0.05, slideTo: 230 });
-    yield 1.4;
+    yield 1.8;
     this.heroSpeed = -1;
     this.pullingAway = true;
-    yield 1.8;
+    this.say("Kal milenge toh na!", "You", "shout");
+    yield 2.0;
     this.watchBoss = false;
     this.look(Math.PI / 2, 0.0, 1.6);
-    this.think("Notice period? Ha.");
-    yield 2.8;
+    yield 2.4;
     this.fadeTo = 1;
     this.fadeRate = 1.1;
     yield 1.1;

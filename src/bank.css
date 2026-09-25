@@ -960,7 +960,9 @@ body.cinematic .touch-controls,
   width: min(300px, 62vh * 0.52);
   height: min(560px, 62vh);
   display: grid;
-  grid-template-rows: auto auto 1fr auto;
+  /* Pinned to the frame: nothing inside may widen or lengthen it. */
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
   overflow: hidden;
   border: 10px solid #111316;
   border-radius: 34px;
@@ -1028,12 +1030,16 @@ body.cinematic .touch-controls,
   flex-direction: column;
   justify-content: flex-end;
   gap: 6px;
+  min-width: 0;
+  min-height: 0;
   padding: 10px;
   overflow: hidden;
 }
 
 .bubble {
+  flex: none;
   max-width: 82%;
+  overflow-wrap: anywhere;
   padding: 6px 9px 14px;
   border-radius: 10px;
   font-size: 13px;
@@ -1077,7 +1083,8 @@ body.cinematic .touch-controls,
 
 .phone-input {
   display: flex;
-  align-items: center;
+  align-items: flex-end;
+  min-width: 0;
   gap: 8px;
   margin: 0 8px 10px;
   padding: 8px 12px;
@@ -1088,11 +1095,18 @@ body.cinematic .touch-controls,
   color: #111;
 }
 
+/* A long message wraps, like a real chat box, up to three lines; beyond
+   that the oldest line scrolls away rather than the box growing. */
 .phone-input span {
   flex: 1;
+  min-width: 0;
+  max-height: 4.2em;
   overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  line-height: 1.4;
+  display: flex;
+  flex-direction: column-reverse;
 }
 
 .phone-send {
@@ -1167,7 +1181,13 @@ body.cinematic .touch-controls,
     border-radius: 24px;
   }
 
-  .bubble {
+  .bubble,
+  .phone-input {
     font-size: 11px;
+  }
+
+  .phone-input {
+    min-height: 30px;
+    padding: 6px 10px;
   }
 }
