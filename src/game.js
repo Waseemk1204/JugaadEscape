@@ -973,7 +973,7 @@ export class JugaadGame {
           const slot = this.inventory.findIndex((it) => it.id === c.needs.item);
           return {
             label: `${c.name} — locked`,
-            sub: slot >= 0 ? `Hold your ${ITEMS[c.needs.item].name.toLowerCase()} to open it — press ${slot + 1}.` : "A small key would open it.",
+            sub: slot >= 0 ? `Hold your ${lowerName(c.needs.item)} to open it — press ${slot + 1}.` : "A small key would open it.",
           };
         }
         if (c.needs?.code && !this.knowsCode) {
@@ -1225,6 +1225,16 @@ export class JugaadGame {
       this.flash("Step out of the doorway first.", 2500);
       return;
     }
+    // Anything dropped in the doorway gets pushed out to your side.
+    if (!opening) {
+      for (const f of this.floorItems) {
+        const d = Math.hypot(this.player.x - f.x, this.player.y - f.y);
+        for (let step = 0; step < d && this.map.isBlocked(f.x, f.y, 5); step += 2) {
+          f.x += ((this.player.x - f.x) / Math.max(1, d - step)) * 2;
+          f.y += ((this.player.y - f.y) / Math.max(1, d - step)) * 2;
+        }
+      }
+    }
     if (door.id === "wooden") this.sound.woodenDoors(opening);
     else if (door.id === "gate") this.sound.gateSlide(!oiled);
     else this.sound.shutterRoll(!oiled);
@@ -1310,6 +1320,8 @@ export class JugaadGame {
         this.scene.add(model);
         this.floorMeshes.set(f.item.uid, model);
       }
+      model.position.x = f.x * U;
+      model.position.z = f.y * U;
       // A phone going off buzzes itself across the tiles.
       if (f.item.id === "phone" && f.ringing > 0) {
         f.ringing -= 1 / 60;
@@ -1398,7 +1410,7 @@ export class JugaadGame {
       if (near) {
         const have = this.inventory.find((i) => i.id === near.a || i.id === near.b);
         const need = have.id === near.a ? near.b : near.a;
-        this.flash(`Nothing to combine yet. Your ${ITEMS[have.id].name.toLowerCase()} would go with a ${ITEMS[need].name.toLowerCase()}…`, 4500);
+        this.flash(`Nothing to combine yet. Your ${lowerName(have.id)} would go with ${withArticle(lowerName(need))}…`, 4500);
       } else {
         this.flash("Nothing in your bag goes together. Yet.", 3000);
       }
@@ -1520,8 +1532,17 @@ export class JugaadGame {
     if (held) {
       this.inventory.splice(this.selected, 1);
       this.selected = Math.max(0, Math.min(this.selected, this.inventory.length - 1));
-      this.contents[held.id === "phone" ? "boss-drawer" : "boss-almirah"].push(held.id);
-      lost = ` He took your ${ITEMS[held.id].name.toLowerCase()}${held.id === "phone" ? " — it's in his desk drawer" : " — it's in his almirah"}.`;
+      if (held.id === "key_bunch") {
+        // His own keys go back on his desk, where they can be swiped again
+        // (and missed again).
+        this.contents["boss-keys"].push(held.id);
+        this.keysTaken = false;
+        this.brain.keysMissed = false;
+        lost = " He took his key bunch back.";
+      } else {
+        this.contents[held.id === "phone" ? "boss-drawer" : "boss-almirah"].push(held.id);
+        lost = ` He took your ${lowerName(held.id)}${held.id === "phone" ? " — it's in his desk drawer" : " — it's in his almirah"}.`;
+      }
     }
     // Anything left open or broken, he locks again.
     for (const door of DOORS) {
@@ -1867,9 +1888,12 @@ export class JugaadGame {
     $("#solo-end-hacks-label").classList.toggle("hidden", !this.stats.log.length);
     this.el.end.classList.remove("hidden");
     this.el.end.classList.toggle("escaped", escaped);
+    // Enter goes again, no mouse needed.
+    this.el.retry.focus({ preventScroll: true });
   }
 
   recordBest(seconds) {
+    if (!(seconds > 0)) return null;
     let best = seconds;
     try {
       const stored = Number(localStorage.getItem(BEST_KEY));
@@ -1978,6 +2002,15 @@ export class JugaadGame {
     this.world?.dispose();
     this.scene = null;
   }
+}
+
+// An item's name mid-sentence: "Old ATM card" → "old ATM card".
+function lowerName(id) {
+  return ITEMS[id].name.replace(/^[A-Z](?=[a-z])/, (c) => c.toLowerCase());
+}
+
+function withArticle(name) {
+  return `${/^[aeiou]/i.test(name) ? "an" : "a"} ${name}`;
 }
 
 function busyFor(tag) {

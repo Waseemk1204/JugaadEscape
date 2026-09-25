@@ -764,9 +764,78 @@ body.cinematic .touch-controls,
   }
 
   .hud-slot {
-    width: 58px;
+    width: 56px;
     height: 54px;
     font-size: 8.5px;
+  }
+
+  /* One line, trimmed: two lines of 8px text under an icon don't fit. */
+  .hud-slot-name {
+    display: block;
+    min-width: 0;
+    max-width: 100%;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  /* The end card: story and buttons on the left, the numbers on the
+     right, so Try again is on screen without scrolling. */
+  .solo-end .overlay-card {
+    width: min(96vw, 760px);
+    max-height: calc(100dvh - 16px);
+    padding: 14px 18px;
+    display: grid;
+    grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+    grid-template-rows: auto auto 1fr auto;
+    column-gap: 18px;
+  }
+
+  .solo-end .overlay-card > * {
+    grid-column: 1;
+  }
+
+  .solo-end .overlay-card h2 {
+    font-size: 22px;
+    margin: 4px 0 6px;
+  }
+
+  .solo-end .overlay-card p {
+    font-size: 13px;
+    line-height: 1.45;
+  }
+
+  .solo-end .overlay-card > .end-side {
+    grid-column: 2;
+    grid-row: 1 / -1;
+    min-height: 0;
+    overflow-y: auto;
+  }
+
+  .solo-end .solo-stats {
+    margin: 0 0 10px;
+    gap: 5px;
+  }
+
+  .solo-end .solo-stats li {
+    padding: 6px 10px;
+    font-size: 12.5px;
+  }
+
+  .solo-end .end-hacks {
+    margin: 0;
+    font-size: 12px;
+  }
+
+  .solo-end .row {
+    margin-top: 10px;
+    align-self: end;
+  }
+
+  /* Up above Combine: at the bottom it sat on the bag's last slot, and
+     beside Combine it clipped the messages. */
+  #drop-button {
+    right: 128px;
+    bottom: 276px;
   }
 
   .hud-slot-icon {
@@ -796,7 +865,7 @@ body.cinematic .touch-controls,
   .solo-hint {
     top: auto;
     bottom: calc(max(8px, var(--safe-bottom)) + 128px);
-    max-width: 50vw;
+    max-width: 44vw;
     font-size: 11.5px;
   }
 
