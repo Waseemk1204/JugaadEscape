@@ -191,7 +191,10 @@ export class JugaadGame {
     // Switching tabs or apps pauses the shift.
     document.addEventListener("visibilitychange", () => {
       if (document.hidden && this.active && !this.runOver && !this.userPaused) this.pause("pause");
-      // Phones suspend audio in the background; the ending plays on unpaused.
+      // The ending can't be paused, but it shouldn't honk from a hidden tab
+      // either: its picture stops with the tab, so does its sound.
+      if (document.hidden && this.active && this.runOver && this.audio.ctx?.state === "running") this.audio.ctx.suspend().catch(() => {});
+      // Phones suspend audio in the background too; bring it back.
       if (!document.hidden && this.active && !this.userPaused) this.audio.ctx?.resume?.().catch(() => {});
     });
     this.el.cineSkip.addEventListener("click", () => this.cinematic?.skip());
@@ -724,7 +727,9 @@ export class JugaadGame {
     this.updateInteraction(dt);
     this.aimAtWork(dt);
     this.updateHud();
-    while (this.tutorialSteps?.length && this.elapsed >= this.tutorialSteps[0].at) this.flash(this.tutorialSteps.shift().text, 7000, 0);
+    // Tips wait for any warning on screen to finish rather than being lost.
+    const warning = (this.flashPriority ?? 0) > 0 && performance.now() < (this.flashUntil ?? 0);
+    if (!warning && this.tutorialSteps?.length && this.elapsed >= this.tutorialSteps[0].at) this.flash(this.tutorialSteps.shift().text, 7000, 0);
 
     // The clock. At 10 and at quarter to 11, a warning; at 11, closing time.
     const minutes = START_MINUTES + this.elapsed * GAME_MINUTES_PER_SECOND;
@@ -1055,7 +1060,9 @@ export class JugaadGame {
           const slot = this.inventory.findIndex((it) => it.id === c.needs.item);
           return {
             label: `${c.name} — locked`,
-            sub: slot >= 0 ? `Hold your ${lowerName(c.needs.item)} to open it — press ${slot + 1}.` : "A small key would open it.",
+            sub: slot >= 0
+              ? `Hold your ${lowerName(c.needs.item)} to open it — press ${slot + 1}.`
+              : `${this.contents[c.id].includes("phone") ? "Your phone is in there. " : ""}A small key would open it.`,
           };
         }
         if (c.needs?.code && !this.knowsCode) {
@@ -1242,7 +1249,11 @@ export class JugaadGame {
     if (found.length) {
       this.sound.pickup();
       if (c.id !== "boss-keys") this.flash(`Found ${found.join(", ")}.${left.length ? " Your hands are full — drop something (Q) for the rest." : ""}`, 5000);
-      this.hintOnce("bag", "Your bag holds five things. 1–5 picks one; G combines two things into a better tool; F uses it.");
+      // After you've read what you found, not over it.
+      if (!this.hintsShown.has("bag")) {
+        this.hintsShown.add("bag");
+        this.later(5, "Your bag holds five things. 1–5 picks one; G combines two things into a better tool; F uses it.");
+      }
       this.selected = Math.max(0, this.inventory.length - 1);
     } else if (left.length) {
       this.sound.nothing();
@@ -1262,11 +1273,13 @@ export class JugaadGame {
     state.done[step.id] = true;
     if (way.breaks) state.broken = true;
     let used = "your hands";
+    let gone = "";
     if (way.item) {
       used = ITEMS[way.item.id].name;
       const before = this.inventory.length;
       this.inventory = spend(this.inventory, way.item.uid);
-      if (this.inventory.length < before) this.flash(`${used} used up.`, 2500);
+      // Said as part of the message below, which would otherwise cover it.
+      if (this.inventory.length < before) gone = ` (${used} used up.)`;
       this.selected = Math.min(this.selected, Math.max(0, this.inventory.length - 1));
     }
     this.stats.log.push({ door: door.name, step: step.name, tag: way.tag, item: used });
@@ -1276,18 +1289,21 @@ export class JugaadGame {
 
     const unlocked = doorUnlocked(door.id, this.doors);
     if (step.optional) {
-      this.flash(`${step.name}: done with ${used}. It'll be quiet now.`, 4000);
+      this.flash(`${step.name}: done with ${used}. It'll be quiet now.${gone}`, 4000);
     } else if (unlocked && door.steps.filter((s) => !s.optional).every((s) => state.done[s.id])) {
       const lines = {
         wooden: "The wooden doors are unlocked! Open them — and pull them shut behind you so Sir doesn't notice.",
         gate: "The gate padlock is off! Oil the track before you slide it, or it'll screech.",
         shutter: "Both shutter locks are open. Grease the channels — or just heave it up and run for it.",
       };
-      this.flash(`Jugaad! ${step.name} done with ${used}. ${lines[door.id]}`, 7000);
+      this.flash(`Jugaad! ${step.name} done with ${used}.${gone} ${lines[door.id]}`, 7000);
     } else {
-      this.flash(`Jugaad! ${step.name} done with ${used}.`, 4000);
+      this.flash(`Jugaad! ${step.name} done with ${used}.${gone}`, 4000);
     }
-    if (way.breaks) this.hintOnce("broken", "A smashed lock is obvious. If Sir sees it, he'll put a new one on.");
+    if (way.breaks && !this.hintsShown.has("broken")) {
+      this.hintsShown.add("broken");
+      this.later(4, "A smashed lock is obvious. If Sir sees it, he'll put a new one on.");
+    }
     this.renderInventory();
     this.renderDoors();
   }
@@ -1894,6 +1910,14 @@ export class JugaadGame {
       .replace(/ \((?:[A-Z]|1–5)\)/g, "");
   }
 
+  // A tip for a few seconds from now (game time), queued with the tutorial's.
+  later(seconds, text) {
+    const at = this.elapsed + seconds;
+    this.tutorialSteps = this.tutorialSteps || [];
+    const i = this.tutorialSteps.findIndex((t) => t.at > at);
+    this.tutorialSteps.splice(i < 0 ? this.tutorialSteps.length : i, 0, { at, text });
+  }
+
   hintOnce(key, message) {
     if (this.hintsShown.has(key)) return;
     this.hintsShown.add(key);
@@ -1910,7 +1934,9 @@ export class JugaadGame {
     el.append(who, document.createTextNode(mood === "thought" ? `(${text})` : text));
     el.className = `hud-subtitle ${mood}`;
     clearTimeout(this.subtitleTimer);
-    this.subtitleTimer = setTimeout(() => el.classList.add("hidden"), 2200 + text.length * 45);
+    const ms = 2200 + text.length * 45;
+    this.subtitleUntil = performance.now() + ms;
+    this.subtitleTimer = setTimeout(() => el.classList.add("hidden"), ms);
   }
 
   showNoise(loudness) {
@@ -2039,6 +2065,10 @@ export class JugaadGame {
       this.sound.stopBusy();
       this.look.disable();
       if (this.audio.ctx?.state === "running") this.audio.ctx.suspend().catch(() => {});
+      // Whatever was being said or flashed waits for you.
+      this.pausedAt = performance.now();
+      clearTimeout(this.flashTimer);
+      clearTimeout(this.subtitleTimer);
     }
     this.pauseMode = mode;
     const texts = {
@@ -2079,6 +2109,17 @@ export class JugaadGame {
     }
     this.audio.ctx?.resume?.().catch(() => {});
     this.lastTime = performance.now();
+    // Messages and subtitles pick up where they left off.
+    const now = performance.now();
+    const held = now - (this.pausedAt ?? now);
+    this.flashUntil = (this.flashUntil ?? 0) + held;
+    this.subtitleUntil = (this.subtitleUntil ?? 0) + held;
+    if (!this.el.hint.classList.contains("faded")) {
+      this.flashTimer = setTimeout(() => this.el.hint.classList.add("faded"), Math.max(0, this.flashUntil - now));
+    }
+    if (!this.el.subtitle.classList.contains("hidden")) {
+      this.subtitleTimer = setTimeout(() => this.el.subtitle.classList.add("hidden"), Math.max(0, this.subtitleUntil - now));
+    }
   }
 
   restart() {
