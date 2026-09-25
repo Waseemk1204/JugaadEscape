@@ -14,7 +14,11 @@
     <link rel="manifest" href="./manifest.webmanifest" />
     <meta property="og:title" content="Jugaad Escape" />
     <meta property="og:description" content="Motu Sir has locked the bank. You quit today. A hairpin, a visiting card and a tiffin of achaar stand between you and the street. Kuch na kuch kar lenge." />
-    <meta property="og:image" content="/assets/og.jpg" />
+    <meta property="og:image" content="https://jugaadescape.vercel.app/assets/og.jpg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:url" content="https://jugaadescape.vercel.app/" />
+    <meta name="twitter:image" content="https://jugaadescape.vercel.app/assets/og.jpg" />
     <meta property="og:type" content="website" />
     <meta name="twitter:card" content="summary_large_image" />
     <link rel="stylesheet" href="./src/styles.css" />
@@ -127,6 +131,7 @@
         <div id="solo-flash" class="solo-flash" aria-hidden="true"></div>
         <div id="solo-fade" class="solo-fade" aria-hidden="true"></div>
         <div id="thappad" class="thappad hidden" aria-hidden="true">THAPPAD!</div>
+        <div id="look-hint" class="look-hint hidden">Click to look around</div>
 
         <div id="solo-hud" class="solo-hud">
           <div class="solo-top">
@@ -249,6 +254,12 @@
         <div class="rotate-phone" aria-hidden="true"><img src="./assets/icon.svg" alt="" /></div>
         <p class="rotate-title">Turn your phone sideways</p>
         <p class="rotate-body">Jugaad Escape plays in landscape. Motu Sir will wait — the game is paused.</p>
+      </div>
+      <!-- The GPU context went away and never came back. -->
+      <div id="gpu-lost" class="gpu-lost hidden" role="alert">
+        <p class="rotate-title">The graphics took a chai break</p>
+        <p>Your browser reset the 3D view. Reloading brings the bank back.</p>
+        <button type="button" onclick="location.reload()">Reload</button>
       </div>
     </main>
 

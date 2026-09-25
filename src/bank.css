@@ -1222,3 +1222,58 @@ body.cinematic .touch-controls,
     padding: 6px 10px;
   }
 }
+
+/* Desktop: the mouse is not captured yet, so turning needs a click. */
+.look-hint {
+  position: absolute;
+  left: 50%;
+  top: 58%;
+  transform: translateX(-50%);
+  padding: 7px 14px;
+  border-radius: 999px;
+  background: rgba(20, 16, 10, 0.72);
+  color: #f5e6c8;
+  font: 600 13px/1.2 var(--font-body, system-ui, sans-serif);
+  letter-spacing: 0.02em;
+  pointer-events: none;
+  z-index: 6;
+}
+
+.gpu-lost {
+  position: fixed;
+  inset: 0;
+  z-index: 110;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 12px;
+  padding: 24px;
+  text-align: center;
+  background: radial-gradient(ellipse at 50% 40%, #173a80, #060b1c 75%);
+  color: #fff4d6;
+}
+
+.gpu-lost.hidden {
+  display: none;
+}
+
+.gpu-lost .rotate-title {
+  margin: 0;
+  font-family: Georgia, serif;
+  font-size: 24px;
+}
+
+.gpu-lost button {
+  padding: 10px 22px;
+  border: 0;
+  border-radius: 999px;
+  background: #f2b233;
+  color: #1a1206;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+body.cinematic .look-hint,
+.solo-screen.ending .look-hint {
+  display: none;
+}

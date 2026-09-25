@@ -85,6 +85,7 @@ export class JugaadGame {
     this.active = false;
     this.el = null;
     this.bound = false;
+    this.finePointer = matchMedia("(hover: hover) and (pointer: fine)").matches;
   }
 
   // ------------------------------------------------------------------ setup
@@ -97,6 +98,7 @@ export class JugaadGame {
       flash: $("#solo-flash"),
       fade: $("#solo-fade"),
       thappad: $("#thappad"),
+      lookHint: $("#look-hint"),
       clock: $("#hud-clock"),
       attempts: $("#hud-attempts"),
       boss: $("#hud-boss"),
@@ -162,6 +164,8 @@ export class JugaadGame {
     // Switching tabs or apps pauses the shift.
     document.addEventListener("visibilitychange", () => {
       if (document.hidden && this.active && !this.runOver && !this.userPaused) this.pause("pause");
+      // Phones suspend audio in the background; the ending plays on unpaused.
+      if (!document.hidden && this.active && !this.userPaused) this.audio.ctx?.resume?.().catch(() => {});
     });
     this.el.cineSkip.addEventListener("click", () => this.cinematic?.skip());
     this.el.useButton?.addEventListener("pointerdown", (e) => {
@@ -1578,6 +1582,13 @@ export class JugaadGame {
   // ------------------------------------------------------------------- HUD
 
   updateHud() {
+    // With a mouse, looking needs the pointer captured, and the capture is
+    // gone after every pause and cutscene until the next click.
+    const needsClick = this.finePointer && !this.look.locked && !this.slap && !this.runOver;
+    if (needsClick !== this.hud.lookHint) {
+      this.hud.lookHint = needsClick;
+      this.el.lookHint.classList.toggle("hidden", !needsClick);
+    }
     const minutes = START_MINUTES + this.elapsed * GAME_MINUTES_PER_SECOND;
     const clock = formatClock(minutes);
     if (clock !== this.hud.clock) {
@@ -1910,8 +1921,14 @@ export class JugaadGame {
     if (!this.userPaused) return;
     this.userPaused = false;
     this.el.pause.classList.add("hidden");
+    // Otherwise the HUD's pause button keeps focus, and the next Space or
+    // Enter meant for the game presses it again.
+    if (this.el.screen.contains(document.activeElement)) document.activeElement.blur();
     this.input.locked = this.pausedLock ?? false;
-    if (!this.paused && !this.cinematic) this.look.enable();
+    if (!this.paused && !this.cinematic) {
+      this.look.enable();
+      this.look.relock();
+    }
     this.audio.ctx?.resume?.().catch(() => {});
     this.lastTime = performance.now();
   }
@@ -1941,6 +1958,7 @@ export class JugaadGame {
     for (const t of this.tutorialTimers || []) clearTimeout(t);
     clearTimeout(this.titleTimer);
     this.el.titleFlash.classList.add("hidden");
+    this.el.lookHint.classList.add("hidden");
     this.endCinematic();
     this.unbindControls();
     this.look.disable();

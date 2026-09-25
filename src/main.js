@@ -22,6 +22,20 @@ const touchControls = $("#touch-controls");
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: "high-performance" });
 renderer.setClearColor(0x000000);
 
+// Phones drop the GPU context when memory runs short (often after being
+// backgrounded). Three.js rebuilds on a restore; if none comes, say so
+// rather than leaving a black screen.
+let contextTimer = 0;
+canvas.addEventListener("webglcontextlost", (event) => {
+  event.preventDefault();
+  clearTimeout(contextTimer);
+  contextTimer = setTimeout(() => document.querySelector("#gpu-lost")?.classList.remove("hidden"), 3000);
+});
+canvas.addEventListener("webglcontextrestored", () => {
+  clearTimeout(contextTimer);
+  document.querySelector("#gpu-lost")?.classList.add("hidden");
+});
+
 const audio = new GameAudio();
 
 const input = new Input({
@@ -68,6 +82,9 @@ function showTitle() {
   showBest();
   fillKit();
   backdrop.start();
+  // Focus stays behind on the game's (now hidden) buttons otherwise, and
+  // Enter would do nothing.
+  $("#title-start").focus({ preventScroll: true });
 }
 
 // Phones play in landscape only. Held upright, a card asks you to turn the

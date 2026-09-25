@@ -250,6 +250,13 @@ export class Look {
     this.enabled = true;
   }
 
+  // Take the mouse back after a pause. Only from a click or key press — the
+  // browser refuses it otherwise — and only with a real mouse.
+  relock() {
+    if (!this.lockable || this.locked || !matchMedia("(pointer: fine)").matches) return;
+    Promise.resolve(this.target.requestPointerLock?.()).catch(() => {});
+  }
+
   disable() {
     this.enabled = false;
     this.pointers.clear();
