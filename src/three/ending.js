@@ -8,7 +8,7 @@
 //      "Kal milenge toh na!" The auto pulls away into the traffic.
 //   2. Home. Your room: the fan, the lamp, the bed. The tie comes off.
 //   3. The phone. You tell Motu Sir the resignation is on his desk, he starts
-//      typing in capitals, you block him — and lie back with a sigh.
+//      typing in capitals, you block him — and lie back under the fan.
 //
 // A self-contained scene with its own three.js world and camera, drawn with
 // the game's renderer. It runs as a cinematic (game.startCinematic) and owns
@@ -844,14 +844,13 @@ export class EndingScene {
     yield 0.5;
     this.phone.root.classList.add("hidden");
 
-    // Lie back. The fan. The sigh.
+    // Lie back. The fan.
     // Head on the pillow, eyes on the fan going round.
     const head = { x: HOME_X - 1.05, y: 0.78, z: -1.2 };
     const fan = { x: HOME_X - 0.3, y: 2.4, z: -0.6 };
     this.move(head.x, head.y, head.z, 1.8);
     this.look(Math.atan2(-(fan.x - head.x), -(fan.z - head.z)), Math.atan2(fan.y - head.y, Math.hypot(fan.x - head.x, fan.z - head.z)), 1.6);
     yield 1.6;
-    this.sigh();
     this.think("Haaaah… sukoon.");
     yield 2.6;
     this.audio.tone({ freq: 2200, type: "square", duration: 0.02, gain: 0.06 });
@@ -1165,12 +1164,6 @@ export class EndingScene {
       if (!this.homeBus) return;
       for (let i = 0; i < 3; i += 1) this.audio.tone({ freq: 4200, type: "sine", duration: 0.04, gain: 0.008, delay: i * 0.07, out: this.homeBus });
     }, 1100);
-  }
-
-  sigh() {
-    const out = this.homeBus || this.audio.master;
-    this.audio.noise({ duration: 1.6, gain: 0.12, filter: 900, out });
-    this.audio.tone({ freq: 220, type: "sine", duration: 1.4, gain: 0.03, slideTo: 150, out });
   }
 
   chord() {
