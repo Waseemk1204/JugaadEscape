@@ -181,7 +181,8 @@ export class EndingScene {
     for (const x of [-7, -2.4, 2.4, 7]) {
       this.part(this.mat(0x1b2230, { emissive: 0x0c1220 }), [1.6, 1.4, 0.05], [x, 5.6, -0.02]);
       for (let i = 0; i < 5; i += 1) this.part(this.mat(0x2a2d31), [0.03, 1.4, 0.03], [x - 0.6 + i * 0.3, 5.6, -0.06]);
-      this.part(this.mat(0xdddddd), [0.8, 0.45, 0.4], [x + 0.45, 4.7, -0.2]); // window AC
+      // Window ACs on the outer windows; the banner covers the middle two.
+      if (Math.abs(x) > 5) this.part(this.mat(0xdddddd), [0.8, 0.45, 0.4], [x + 0.45, 4.7, -0.2]);
     }
     // Inside, bright tube light; the shutter half up; the lintel.
     this.part(this.own(new THREE.MeshBasicMaterial({ color: 0xe8f0f4 })), [6, 2.9, 0.05], [0, 1.45, 1.6]);
@@ -205,11 +206,13 @@ export class EndingScene {
     spill.target.position.set(0, 0, -4);
     s.add(spill, spill.target);
     // The board, lit from below by two little lamps.
-    this.sign(signTexture(1024, 160, "#12306b", [["भारतीय जुगाड़ बैंक", 58, "#ffffff"], ["BHARATIYA JUGAAD BANK · MAIN BRANCH", 36, "#f2c14e"]]), 9.5, 1.5, 0, 4.1, -0.05, 0, s, true);
+    this.sign(signTexture(1024, 160, "#12306b", [["भारतीय जुगाड़ बैंक", 58, "#ffffff"], ["BHARATIYA JUGAAD BANK · MAIN BRANCH", 36, "#f2c14e"]]), 9.5, 1.5, 0, 4.1, -0.05, Math.PI, s, true);
+    this.dressBank();
+
     // The ATM kiosk, next door, glowing.
     this.part(this.mat(0xe0492b, { emissive: 0x5a1208 }), [2.6, 3, 2], [5, 1.5, -1.2]);
     this.part(this.own(new THREE.MeshBasicMaterial({ color: 0xfff6e6 })), [1.6, 2.2, 0.05], [5, 1.3, -2.21]);
-    this.sign(signTexture(256, 96, "#e0492b", [["ATM · 24x7", 40, "#fff"]]), 2.2, 0.6, 5, 2.75, -2.23, 0, s, true);
+    this.sign(signTexture(256, 96, "#e0492b", [["ATM · 24x7", 40, "#fff"]]), 2.2, 0.6, 5, 2.75, -2.23, Math.PI, s, true);
     const atmLight = new THREE.PointLight(0xffe6d0, 6, 8, 1.5);
     atmLight.position.set(5, 2, -3);
     s.add(atmLight);
@@ -281,6 +284,114 @@ export class EndingScene {
 
     s.add(new THREE.HemisphereLight(0x5a6aa8, 0x2a1c14, 0.9));
     s.add(new THREE.AmbientLight(0x6a5a70, 0.5));
+  }
+
+  // No Indian branch front is ever bare: a flex banner shouting about gold
+  // loans, marigold garlands left over from the last puja, a mango-leaf toran
+  // over the door, and a string of fairy lights along the ledge.
+  dressBank() {
+    const s = this.scene;
+
+    // The flex banner, tied across the first floor with a bit of sag.
+    const flex = canvasTexture(1024, 240, (ctx, w, h) => {
+      const bg = ctx.createLinearGradient(0, 0, w, 0);
+      bg.addColorStop(0, "#c8102e");
+      bg.addColorStop(0.55, "#e8491d");
+      bg.addColorStop(1, "#f2b632");
+      ctx.fillStyle = bg;
+      ctx.fillRect(0, 0, w, h);
+      // Rays behind the offer badge.
+      ctx.save();
+      ctx.translate(120, 120);
+      for (let i = 0; i < 16; i += 1) {
+        ctx.rotate(Math.PI / 8);
+        ctx.fillStyle = i % 2 ? "rgba(255,255,255,0.08)" : "rgba(255,230,120,0.18)";
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(260, -40);
+        ctx.lineTo(260, 40);
+        ctx.fill();
+      }
+      ctx.restore();
+      // Starburst badge.
+      ctx.fillStyle = "#ffe14d";
+      ctx.beginPath();
+      for (let i = 0; i < 24; i += 1) {
+        const r = i % 2 ? 62 : 84;
+        const a = (i / 24) * Math.PI * 2;
+        ctx[i ? "lineTo" : "moveTo"](120 + Math.cos(a) * r, 120 + Math.sin(a) * r);
+      }
+      ctx.fill();
+      ctx.fillStyle = "#c8102e";
+      ctx.textAlign = "center";
+      ctx.font = "900 30px Impact, 'Arial Black', sans-serif";
+      ctx.fillText("OFFER!", 120, 116);
+      ctx.font = "bold 17px sans-serif";
+      ctx.fillText("सीमित समय", 120, 142);
+      // Headline.
+      ctx.textAlign = "left";
+      ctx.fillStyle = "#fff";
+      ctx.font = "900 62px Impact, 'Arial Black', sans-serif";
+      ctx.fillText("GOLD LOAN", 232, 88);
+      ctx.fillStyle = "#ffe14d";
+      ctx.font = "bold 44px sans-serif";
+      ctx.fillText("सिर्फ़ 15 मिनट में!", 232, 142);
+      ctx.fillStyle = "#fff";
+      ctx.font = "bold 20px sans-serif";
+      ctx.fillText("Home Loan @ 8.4%*  •  Zero Balance A/c  •  Aadhaar Camp Every Sat.", 232, 186, w - 250);
+      ctx.font = "italic 15px sans-serif";
+      ctx.fillStyle = "rgba(255,255,255,0.85)";
+      ctx.fillText("*T&C apply. Loan sanction subject to Branch Manager's mood.", 232, 216, w - 250);
+      // Eyelets.
+      ctx.fillStyle = "#ddd";
+      for (const [x, y] of [[12, 12], [w - 12, 12], [12, h - 12], [w - 12, h - 12]]) {
+        ctx.beginPath();
+        ctx.arc(x, y, 6, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    });
+    // Facing the street (-z), like every sign on this front.
+    const banner = this.sign(flex, 9.2, 2.15, 0, 6.3, -0.12, Math.PI, s);
+    banner.rotation.z = -0.012;
+    // Ropes from the eyelets to the wall.
+    const rope = this.mat(0xe8e2c8);
+    for (const [x, y] of [[-4.62, 7.35], [4.62, 7.35], [-4.62, 5.25], [4.62, 5.25]]) {
+      this.part(rope, [0.5, 0.015, 0.015], [x + Math.sign(x) * 0.24, y, -0.08], s, this.box, [0, 0, -Math.sign(x) * Math.sign(y - 6.3) * 0.3]);
+    }
+
+    // Marigold garlands, swagged in loops under the blue board.
+    const orange = this.mat(0xf28c1c, { emissive: 0x3a1a00 });
+    const yellow = this.mat(0xf6c21a, { emissive: 0x3a2c00 });
+    const leaf = this.mat(0x2f7a2a);
+    const swags = 5;
+    const left = -4.6;
+    const span = 9.2 / swags;
+    for (let i = 0; i < swags; i += 1) {
+      for (let k = 0; k <= 12; k += 1) {
+        const t = k / 12;
+        const x = left + (i + t) * span;
+        const y = 3.38 - Math.sin(t * Math.PI) * 0.34;
+        this.part(k % 2 ? yellow : orange, [0.11, 0.11, 0.11], [x, y, -0.18], s, this.sph);
+      }
+      // A hanging tassel at each join.
+      for (let k = 0; k < 4; k += 1) this.part(k % 2 ? yellow : orange, [0.1, 0.1, 0.1], [left + i * span, 3.3 - k * 0.1, -0.18], s, this.sph);
+    }
+
+    // Mango-leaf toran across the top of the shutter.
+    for (let x = -2.9; x <= 2.9; x += 0.26) {
+      const l = this.part(leaf, [0.09, 0.26, 0.012], [x, 2.78, -0.08], s, this.box, [0, 0, (x * 7) % 0.3 - 0.15]);
+      l.position.y -= Math.abs(Math.sin(x)) * 0.03;
+    }
+    this.part(this.mat(0x8a5a2a), [5.9, 0.02, 0.02], [0, 2.92, -0.08]);
+
+    // Fairy lights along the ledge, twinkling in three colours.
+    this.fairy = [0xff4d4d, 0x4dff6a, 0xffd24d, 0x4db8ff].map((c) => this.own(new THREE.MeshBasicMaterial({ color: c })));
+    this.fairyColours = [0xff4d4d, 0x4dff6a, 0xffd24d, 0x4db8ff];
+    for (let i = 0; i < 64; i += 1) {
+      const x = -10.4 + i * 0.33;
+      const y = 3.62 - Math.abs(Math.sin(i * 0.5)) * 0.08;
+      this.part(this.fairy[i % 4], [0.06, 0.06, 0.06], [x, y, -0.45], s, this.sph);
+    }
   }
 
   person(parent, x, h, z, shirt) {
@@ -637,6 +748,7 @@ export class EndingScene {
     this.braking = true;
     yield () => Math.abs(hero.position.x - 0.8) < 0.15;
     this.braking = false;
+    this.heroSpeed = 0; // stopped dead, not creeping forward
     this.look(-0.2, -0.12, 3);
     this.say("Kahan chalna hai, sahab?", "Auto-wala");
     this.honk(false);
@@ -646,10 +758,11 @@ export class EndingScene {
     this.move(0.7, 1.4, -4.6, 2.4);
     this.say("Sector 12! Jaldi chalo — double paisa dunga!", "You", "shout");
     yield 1.2;
-    // Settle in behind the driver, looking out over his shoulder.
-    this.move(hero.position.x + 0.4, 1.32, -6.3, 3);
-    this.look(Math.PI / 2, -0.06, 2.5);
-    yield 1.2;
+    // Settle into the back seat: the driver's shoulders, and the road ahead
+    // through the windshield past him.
+    this.move(hero.position.x + 0.68, 1.36, -6.4 - 0.2, 3.5);
+    this.look(Math.PI / 2 - 0.08, -0.07, 3.5);
+    yield 2.2;
 
     // One look back — leaning out of the open side of the auto. He is under
     // the shutter, and he is not coming out.
@@ -794,6 +907,14 @@ export class EndingScene {
     this.boss.setVisible(Boolean(this.bossOn));
     if (this.bossOn) {
       this.boss.update({ x: 0, y: 0.4 * 32, angle: -Math.PI / 2, pose: "slap", slap: 0.25 + Math.abs(Math.sin(now * 5)) * 0.3, dt, time: now, angry: true });
+    }
+
+    // The fairy lights chase each other along the ledge.
+    if (this.fairy) {
+      this.fairy.forEach((m, i) => {
+        const on = Math.sin(now * 5 - i * 1.6) > -0.2;
+        m.color.setHex(on ? this.fairyColours[i] : 0x221a14);
+      });
     }
 
     // Home: the fan never stops, the lamp goes off, the tie comes off.
