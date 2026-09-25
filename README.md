@@ -24,7 +24,7 @@ lying around — without him catching you.
   your desk; an empty chair starts a search.
 - **Getting seen fills a meter**, slowly while he is busy, fast when he is
   looking for you. Crouch behind desks to break it. If it fills: THAPPAD, back
-  to your desk, and whatever you were holding goes into his almirah. Three
+  to your desk, and whatever you were holding goes into his almirah. Five
   slaps and it is the record room: a desk, a lamp, and every pending file.
 - **Out by 11 PM.** At 11 Sir lets the branch go home, one by one, each
   showing him the day's work at the gate. You won't have any.

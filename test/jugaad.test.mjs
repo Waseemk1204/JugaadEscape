@@ -111,7 +111,7 @@ test("escaping with improvised tools beats escaping with keys", () => {
 
 test("a shift that ends inside is titled for how it ended", () => {
   assert.equal(jugaadTitle(0, false, "eleven"), "Record room ka naya karmchari");
-  assert.equal(jugaadTitle(0, false, "slaps"), "Teen thappad club");
+  assert.equal(jugaadTitle(0, false, "slaps"), "Paanch thappad club");
   assert.equal(jugaadTitle(900, false, "eleven"), "Almost Home");
   assert.notEqual(jugaadTitle(0, true), "Record room ka naya karmchari");
 });
