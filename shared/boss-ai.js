@@ -32,6 +32,8 @@ export const BOSS = {
   OUTING_MIN_S: 34, // how short the gap gets once he is suspicious
   SUSPICION_STEP_S: 7,
   PEE_S: 25,
+  DEAF_S: 7, // the first seconds in the loo: tap running, fan on, he hears nothing
+  PEE_ALERT_S: 5,
   ALERT_MIN_S: 10,
   ALERT_MAX_S: 15,
   ALERT_LOUD_S: 2, // something really loud gets him up at once
@@ -83,6 +85,7 @@ export class BossBrain {
     this.action = null;
     this.timer = 0;
     this.peeing = false;
+    this.deafFor = 0;
     this.glanceIn = this.glanceGap();
     this.glancing = 0;
     this.noise = null;
@@ -191,9 +194,9 @@ export class BossBrain {
   // Something went bang. Returns true if he heard it.
   hearNoise(x, y, loudness) {
     if (this.mode === "confront" || loudness <= 0) return false;
-    // In the loo, with the exhaust fan going and the tap running, he hears
-    // nothing at all — however loud.
-    if (this.peeing) return false;
+    // The first few seconds in the loo, with the exhaust fan going and the
+    // tap running, he hears nothing at all — however loud.
+    if (this.peeing && this.deafFor > 0) return false;
     const distance = Math.hypot(x - this.x, y - this.y);
     const clear = this.map.hasLineOfSight(this.x, this.y, x, y);
     // Walls muffle, but a bank is not a big building — and a padlock being
@@ -202,6 +205,17 @@ export class BossBrain {
     if (distance > reach && loudness < 0.95) return false;
     this.noise = { x, y };
     const loud = loudness >= 0.95;
+
+    // After that, a noise has him out of the loo — a few seconds to get
+    // himself together first.
+    if (this.mode === "washroom" && this.peeing) {
+      this.mode = "alerted";
+      this.timer = loud ? 1 : BOSS.PEE_ALERT_S;
+      this.deafFor = 0;
+      this.say("Kaun hai bahar?!", "shout");
+      this.emit("alerted");
+      return true;
+    }
 
     if (this.mode === "cabin" || this.mode === "phone") {
       this.mode = "alerted";
@@ -290,6 +304,7 @@ export class BossBrain {
     // back down, so a long round never eats into your time. A phone call
     // counts — he is still in his chair.
     if (this.mode === "cabin" || this.mode === "phone") this.outingIn -= dt;
+    if (this.peeing && this.deafFor > 0) this.deafFor = Math.max(0, this.deafFor - dt);
 
     switch (this.mode) {
       case "cabin":
@@ -398,6 +413,7 @@ export class BossBrain {
     this.action = { type: node.action, t: durations[node.action] ?? 1, face: node.face, base: this.angle, door: node.door };
     if (node.action === "pee") {
       this.peeing = true;
+      this.deafFor = BOSS.DEAF_S;
       this.emit("pee");
     }
     if (node.action === "look") this.emit("arrived", { x: this.x, y: this.y });
