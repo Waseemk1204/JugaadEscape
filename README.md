@@ -25,13 +25,14 @@ lying around — without him catching you.
   your desk; an empty chair starts a search.
 - **Getting seen fills a meter**, slowly while he is busy, fast when he is
   looking for you. Crouch behind desks to break it. If it fills: THAPPAD, back
-  to your desk, and whatever you were holding goes into his almirah. Three
+  to your desk, and whatever you were holding goes into his almirah. Five
   slaps and it is the record room: a desk, a lamp, and every pending file.
 - **Out by 11 PM.** At 11 Sir lets the branch go home, one by one, each
   showing him the day's work at the gate. You won't have any.
 - **Close doors behind you.** If he spots a door standing open (or a
-  smashed padlock), he marches over and locks it himself, then goes looking
-  for whoever did it — be on the right side of it when he gets there.
+  smashed padlock), he marches over and locks everything up again — every
+  door, every lock you had opened, shutter included — then goes looking for
+  whoever did it. Be on the right side of the doors when he gets there.
 - **Don't forget your phone.** It's how he finds out you've quit. If he
   confiscates it, it goes in his desk drawer (small key); you can't crawl
   out under the shutter without it.

@@ -9,7 +9,7 @@
 // loo — get up, search drawers and almirahs for everyday office things, bend
 // them into tools, and work on the three doors between you and the street.
 // Make noise and he comes out: "Kaun hai?!", then 10–15 seconds to get back in
-// your chair. Get caught and he slaps you back to your desk. Three slaps and
+// your chair. Get caught and he slaps you back to your desk. Five slaps and
 // you are here till midnight.
 //
 // This file is the glue: movement, the camera, the HUD, and turning the
@@ -37,7 +37,7 @@ const HAND_REST = [0.21, -0.2, -0.42];
 
 const EYE = { STAND: 1.6, CROUCH: 0.98, SEATED: 1.18 };
 const SPEED = { WALK: 100, RUN: 150, CROUCH: 52 };
-const ATTEMPTS = 3;
+const ATTEMPTS = 5;
 const REACH = 1.7 * 32; // map pixels you can reach from where you stand
 const START_MINUTES = 18 * 60; // 6:00 PM
 const GAME_MINUTES_PER_SECOND = 1 / 6; // the wall clock runs ten times fast
@@ -882,7 +882,7 @@ export class JugaadGame {
         break;
       case "spottedDoor": {
         const name = DOORS.find((d) => d.id === e.id).name.toLowerCase();
-        this.flash(`Sir saw the ${name} ${this.doors[e.id].broken ? "tampered with" : "open"} — he's coming to lock ${e.id === "wooden" ? "them" : "it"}! Don't be on the other side.`, 6000);
+        this.flash(`Sir saw the ${name} ${this.doors[e.id].broken ? "tampered with" : "open"} — he's coming to lock everything up again! Don't be on the other side.`, 6000);
         break;
       }
       case "relock":
@@ -939,18 +939,24 @@ export class JugaadGame {
   }
 
   // He saw a door standing open (or a broken padlock) and locked it again.
+  // He locks up. After a slap, just what he finds open or broken (`id`);
+  // when he has caught a door standing open, everything — the wooden doors,
+  // the gate padlock, both shutter locks — back to how it was at 6 PM.
   relockDoor(id, seenByHim = false) {
+    const ids = seenByHim ? DOORS.map((d) => d.id) : [id];
     const room = roomAt(this.player.x, this.player.y);
-    // Standing in the doorway itself counts too: shutting it would leave you
-    // inside the closed door.
-    const wasOpen = this.map.doors[id];
-    this.map.setDoorOpen(id, false);
-    const inDoorway = this.map.isBlocked(this.player.x, this.player.y, PLAYER_RADIUS);
-    this.map.setDoorOpen(id, wasOpen);
+    // Standing in a doorway he is shutting counts as the wrong side too.
+    let inDoorway = false;
+    for (const doorId of ids) {
+      const wasOpen = this.map.doors[doorId];
+      this.map.setDoorOpen(doorId, false);
+      if (this.map.isBlocked(this.player.x, this.player.y, PLAYER_RADIUS)) inDoorway = true;
+      this.map.setDoorOpen(doorId, wasOpen);
+    }
     const beyond =
       inDoorway ||
-      (id === "wooden" && ["landing", "vestibule", "street"].includes(room)) ||
-      (id === "gate" && ["vestibule", "street"].includes(room));
+      (ids.includes("wooden") && ["landing", "vestibule", "street"].includes(room)) ||
+      (ids.includes("gate") && ["vestibule", "street"].includes(room));
     if (seenByHim && beyond) {
       // You are on the wrong side of the door he is shutting. That is that.
       this.brain.mode = "confront";
@@ -958,20 +964,30 @@ export class JugaadGame {
       this.startSlap();
       return;
     }
-    const door = DOORS.find((d) => d.id === id);
-    if (seenByHim) {
-      // The door swinging shut (or the gate rattling across), then the lock.
-      if (this.doors[id].open) {
-        if (id === "wooden") this.sound.woodenDoors(false);
-        else this.sound.gateSlide(false);
+    const undone = ids.filter((doorId) => {
+      const state = this.doors[doorId];
+      return state.open || state.broken || Object.values(state.done).some(Boolean);
+    });
+    for (const doorId of ids) {
+      const door = DOORS.find((d) => d.id === doorId);
+      if (seenByHim && this.doors[doorId].open) {
+        // The door swinging shut, the gate rattling across, the shutter down.
+        if (doorId === "wooden") this.sound.woodenDoors(false);
+        else if (doorId === "gate") this.sound.gateSlide(false);
+        else this.sound.shutterRoll(false);
       }
-      this.sound.unlock();
+      this.doors[doorId] = { open: false, broken: false, done: Object.fromEntries(door.steps.map((s) => [s.id, false])) };
+      this.map.setDoorOpen(doorId, false);
     }
-    this.doors[id] = { open: false, broken: false, done: Object.fromEntries(door.steps.map((s) => [s.id, false])) };
-    this.map.setDoorOpen(id, false);
+    if (seenByHim) this.sound.unlock();
     this.renderDoors();
-    if (seenByHim) this.flash(`Sir found the ${door.name.toLowerCase()} tampered with and locked ${id === "wooden" ? "them" : "it"} again. Close doors behind you!`, 6000);
+    if (seenByHim) {
+      const names = undone.map((doorId) => ({ wooden: "the wooden doors", gate: "the gate padlock", shutter: "both shutter locks" })[doorId]);
+      const list = names.length > 1 ? `${names.slice(0, -1).join(", ")} and ${names.at(-1)}` : names[0] || "the doors";
+      this.flash(`Sir locked everything up again — ${list}. Back to square one. Close doors behind you!`, 7000, 2);
+    }
   }
+
 
   // ----------------------------------------------------------- interaction
 
@@ -2044,7 +2060,7 @@ export class JugaadGame {
       ? `Out under the shutter at ${clock}, into an auto, home. Resignation: on his desk. Motu Sir: blocked. Notice period: served in spirit. Sukoon.`
       : this.failKind === "eleven"
         ? "At 11 the whole branch showed Sir the day's work and went home. All you had to show was your resignation — \"notice period teen mahine ka hota hai\" — so it's the record room, a desk, and every pending file till 9 AM, with the letter at the bottom of the pile."
-        : "Three slaps, and the record room: a desk, a lamp and every pending file since 2019, due by morning. Your resignation letter is still in your pocket — and your notice period starts tomorrow.";
+        : "Five slaps, and the record room: a desk, a lamp and every pending file since 2019, due by morning. Your resignation letter is still in your pocket — and your notice period starts tomorrow.";
     this.el.endStats.innerHTML = "";
     const stat = (label, value) => {
       const li = document.createElement("li");

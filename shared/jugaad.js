@@ -415,7 +415,7 @@ export function jugaadScore({ log = [], crafted = 0, decoys = 0, slaps = 0, spot
 export function jugaadTitle(score, escaped, failKind = "slaps") {
   if (!escaped) {
     if (score > 600) return "Almost Home";
-    return failKind === "eleven" ? "Record room ka naya karmchari" : "Teen thappad club";
+    return failKind === "eleven" ? "Record room ka naya karmchari" : "Paanch thappad club";
   }
   if (score >= 2400) return "Certified Jugaadu";
   if (score >= 1800) return "Desi MacGyver";
