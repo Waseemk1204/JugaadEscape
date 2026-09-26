@@ -35,7 +35,6 @@ export const BOSS = {
   ALERT_MIN_S: 10,
   ALERT_MAX_S: 15,
   ALERT_LOUD_S: 2, // something really loud gets him up at once
-  PEE_ALERT_S: 5,
   PHONE_S: 25,
   SEARCH_S: 22,
   LOCK_S: 3, // at the door, locking it back up
@@ -192,6 +191,9 @@ export class BossBrain {
   // Something went bang. Returns true if he heard it.
   hearNoise(x, y, loudness) {
     if (this.mode === "confront" || loudness <= 0) return false;
+    // In the loo, with the exhaust fan going and the tap running, he hears
+    // nothing at all — however loud.
+    if (this.peeing) return false;
     const distance = Math.hypot(x - this.x, y - this.y);
     const clear = this.map.hasLineOfSight(this.x, this.y, x, y);
     // Walls muffle, but a bank is not a big building — and a padlock being
@@ -201,13 +203,6 @@ export class BossBrain {
     this.noise = { x, y };
     const loud = loudness >= 0.95;
 
-    if (this.mode === "washroom" && this.peeing) {
-      this.mode = "alerted";
-      this.timer = loud ? 1 : BOSS.PEE_ALERT_S;
-      this.say("Kaun hai bahar?!", "shout");
-      this.emit("alerted");
-      return true;
-    }
     if (this.mode === "cabin" || this.mode === "phone") {
       this.mode = "alerted";
       this.timer = loud

@@ -171,3 +171,20 @@ test("a door shut in his face on the way leaves nothing to lock", () => {
   assert.ok(!log.some((e) => e.type === "relock"));
   assert.equal(brain.mode, "search");
 });
+
+test("in the loo he hears nothing, however loud", () => {
+  const brain = new BossBrain(new BankMap(), seeded(12));
+  brain.nextOuting = "washroom";
+  brain.outingIn = 0.01;
+  for (let t = 0; t < 60 && !brain.peeing; t += 1 / 30) brain.update(1 / 30, seated);
+  assert.ok(brain.peeing, "never got to the loo");
+  // A padlock smashed at the front doors, and a shout right outside.
+  assert.equal(brain.hearNoise(16.9 * TILE, 4.5 * TILE, 1), false);
+  assert.equal(brain.hearNoise(27 * TILE, 31 * TILE, 0.9), false);
+  assert.equal(brain.mode, "washroom");
+  assert.ok(brain.peeing);
+  // Out of the loo, his ears work again.
+  for (let t = 0; t < BOSS.PEE_S + 1 && brain.peeing; t += 1 / 30) brain.update(1 / 30, seated);
+  assert.equal(brain.peeing, false);
+  assert.equal(brain.hearNoise(16.9 * TILE, 4.5 * TILE, 1), true);
+});

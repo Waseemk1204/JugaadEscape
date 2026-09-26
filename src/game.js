@@ -870,7 +870,7 @@ export class JugaadGame {
         this.sound.flush(b.x, b.y);
         break;
       case "pee":
-        if (!this.hintsShown.has("pee")) this.hintOnce("pee", "Sir's in the loo. His cabin is empty — and his keys are on his desk.");
+        if (!this.hintsShown.has("pee")) this.hintOnce("pee", "Sir's in the loo — he can't hear a thing in there. His cabin is empty, and his keys are on his desk.");
         break;
       case "noticing":
         this.stats.spotted += 1;
@@ -1761,7 +1761,7 @@ export class JugaadGame {
       case "round":
         return { cls: "warn", text: "Sir is walking his round" };
       case "washroom":
-        if (b.peeing) return { cls: "chance", text: `Sir in the loo · ${s(b.action?.t ?? 0)} · cabin empty!` };
+        if (b.peeing) return { cls: "chance", text: `Sir in the loo · ${s(b.action?.t ?? 0)} · can't hear you!` };
         return { cls: "warn", text: b.plan.some((p) => p.action === "pee") ? "Sir heading to the loo" : "Sir back from the loo" };
       case "investigate":
         return { cls: "danger", text: "Sir is checking the noise" };

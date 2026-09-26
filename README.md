@@ -18,7 +18,8 @@ lying around — without him catching you.
   staring at his monitor, now and then glancing up). A full minute after he
   sits back down, he gets up to walk a round past your desk to the front
   doors. Every other time he goes to the loo instead — his cabin is empty,
-  and his key bunch is on his desk.
+  his key bunch is on his desk, and while he's in there he hears nothing,
+  however loud.
 - **Noise brings him out.** "Kaun hai?!" — then 10–15 seconds before he is on
   his feet. Be back in your chair. On the way back from anything he checks
   your desk; an empty chair starts a search.
