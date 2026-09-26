@@ -19,7 +19,7 @@ lying around — without him catching you.
   sits back down, he gets up to walk a round past your desk to the front
   doors. Every other time he goes to the loo instead — his cabin is empty,
   his key bunch is on his desk, and for his first 7 seconds in there he
-  hears nothing, however loud.
+  hears nothing, however loud (after that, a noise brings him out).
 - **Noise brings him out.** "Kaun hai?!" — then 10–15 seconds before he is on
   his feet. Be back in your chair. On the way back from anything he checks
   your desk; an empty chair starts a search.
@@ -35,6 +35,9 @@ lying around — without him catching you.
 - **Don't forget your phone.** It's how he finds out you've quit. If he
   confiscates it, it goes in his desk drawer (small key); you can't crawl
   out under the shutter without it.
+- **Put two things together.** Hold an item and it tells you what it
+  combines with and what that makes; once both halves are in your bag, G
+  (or the glowing Combine button on a phone) puts them together.
 - **Use what's in your hand.** Pick the tool (1–5, or tap a slot) before you
   hold E on a lock; the prompt tells you which slot has something that fits.
   Esc pauses; leaving or restarting asks first.
