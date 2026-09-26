@@ -18,14 +18,14 @@ lying around — without him catching you.
   staring at his monitor, now and then glancing up). A full minute after he
   sits back down, he gets up to walk a round past your desk to the front
   doors. Every other time he goes to the loo instead — his cabin is empty,
-  his key bunch is on his desk, and for his first 7 seconds in there he
-  hears nothing, however loud (after that, a noise brings him out).
+  his key bunch is on his desk — but he can still hear you, and a noise
+  brings him out of the loo.
 - **Noise brings him out.** "Kaun hai?!" — then 10–15 seconds before he is on
   his feet. Be back in your chair. On the way back from anything he checks
   your desk; an empty chair starts a search.
 - **Getting seen fills a meter**, slowly while he is busy, fast when he is
   looking for you. Crouch behind desks to break it. If it fills: THAPPAD, back
-  to your desk, and whatever you were holding goes into his almirah. Five
+  to your desk, and whatever you were holding goes into his almirah. Three
   slaps and it is the record room: a desk, a lamp, and every pending file.
 - **Out by 11 PM.** At 11 Sir lets the branch go home, one by one, each
   showing him the day's work at the gate. You won't have any.

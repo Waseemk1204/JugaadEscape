@@ -9,7 +9,7 @@
 // loo — get up, search drawers and almirahs for everyday office things, bend
 // them into tools, and work on the three doors between you and the street.
 // Make noise and he comes out: "Kaun hai?!", then 10–15 seconds to get back in
-// your chair. Get caught and he slaps you back to your desk. Five slaps and
+// your chair. Get caught and he slaps you back to your desk. Three slaps and
 // you are here till midnight.
 //
 // This file is the glue: movement, the camera, the HUD, and turning the
@@ -37,7 +37,7 @@ const HAND_REST = [0.21, -0.2, -0.42];
 
 const EYE = { STAND: 1.6, CROUCH: 0.98, SEATED: 1.18 };
 const SPEED = { WALK: 100, RUN: 150, CROUCH: 52 };
-const ATTEMPTS = 5;
+const ATTEMPTS = 3;
 const REACH = 1.7 * 32; // map pixels you can reach from where you stand
 const START_MINUTES = 18 * 60; // 6:00 PM
 const GAME_MINUTES_PER_SECOND = 1 / 6; // the wall clock runs ten times fast
@@ -870,7 +870,7 @@ export class JugaadGame {
         this.sound.flush(b.x, b.y);
         break;
       case "pee":
-        if (!this.hintsShown.has("pee")) this.hintOnce("pee", "Sir's in the loo. For the first few seconds he can't hear a thing — after that, keep it quiet. His cabin is empty, and his keys are on his desk.");
+        if (!this.hintsShown.has("pee")) this.hintOnce("pee", "Sir's in the loo. His cabin is empty, and his keys are on his desk — but keep it quiet, he can still hear you.");
         break;
       case "noticing":
         this.stats.spotted += 1;
@@ -1767,7 +1767,6 @@ export class JugaadGame {
       case "round":
         return { cls: "warn", text: "Sir is walking his round" };
       case "washroom":
-        if (b.peeing && b.deafFor > 0) return { cls: "chance", text: `Sir in the loo · can't hear you for ${s(b.deafFor)}!` };
         if (b.peeing) return { cls: "chance", text: `Sir in the loo · ${s(b.action?.t ?? 0)} · cabin empty!` };
         return { cls: "warn", text: b.plan.some((p) => p.action === "pee") ? "Sir heading to the loo" : "Sir back from the loo" };
       case "investigate":
@@ -2045,7 +2044,7 @@ export class JugaadGame {
       ? `Out under the shutter at ${clock}, into an auto, home. Resignation: on his desk. Motu Sir: blocked. Notice period: served in spirit. Sukoon.`
       : this.failKind === "eleven"
         ? "At 11 the whole branch showed Sir the day's work and went home. All you had to show was your resignation — \"notice period teen mahine ka hota hai\" — so it's the record room, a desk, and every pending file till 9 AM, with the letter at the bottom of the pile."
-        : "Five slaps, and the record room: a desk, a lamp and every pending file since 2019, due by morning. Your resignation letter is still in your pocket — and your notice period starts tomorrow.";
+        : "Three slaps, and the record room: a desk, a lamp and every pending file since 2019, due by morning. Your resignation letter is still in your pocket — and your notice period starts tomorrow.";
     this.el.endStats.innerHTML = "";
     const stat = (label, value) => {
       const li = document.createElement("li");
