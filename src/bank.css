@@ -1551,3 +1551,53 @@ body.cinematic .look-hint,
 #screen-solo.cinematic.paused .solo-hud > .solo-top {
   display: flex !important;
 }
+
+/* Two things in the bag go together: the Combine button says so. */
+#combine-button.available {
+  border-color: var(--marigold);
+  background: rgba(242, 182, 50, 0.22);
+  color: #fff4d6;
+  animation: combine-ready 1.6s ease-in-out infinite;
+}
+
+@keyframes combine-ready {
+  50% {
+    box-shadow: 0 0 0 4px rgba(242, 182, 50, 0.25), 0 0 22px rgba(242, 182, 50, 0.45);
+  }
+}
+
+/* Narrow windows: Sir's status gets a row of its own under the clock and
+   the buttons instead of being squeezed to a sliver between them; the bag
+   and the "at your desk" note move down to make room. */
+@media (max-width: 600px) and (min-height: 501px) {
+  .solo-top {
+    flex-wrap: wrap;
+    row-gap: 8px;
+  }
+
+  .hud-boss {
+    order: 5;
+    flex: 1 1 100%;
+    justify-content: center;
+  }
+
+  .hud-bag {
+    top: calc(max(16px, var(--safe-top)) + 124px);
+  }
+
+  .hud-seated {
+    top: calc(max(16px, var(--safe-top)) + 196px);
+  }
+}
+
+/* Small slots anywhere: names on one line, trimmed, never cut in half. */
+@media (max-width: 760px), (max-height: 520px) {
+  .hud-slot-name {
+    display: block;
+    min-width: 0;
+    max-width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}

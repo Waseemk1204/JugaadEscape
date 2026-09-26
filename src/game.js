@@ -21,7 +21,7 @@ import { BankMap, SPOTS, TILE, U, PLAYER_RADIUS, roomAt, cellPoint } from "../sh
 import { BossBrain } from "../shared/boss-ai.js";
 import {
   ITEMS, CONTAINERS, DOORS, CODE_NOTE, SLOTS,
-  placeItems, lockedDoors, doorUnlocked, waysFor, makeItem, spend, combine, nearRecipes, jugaadScore, jugaadTitle,
+  placeItems, lockedDoors, doorUnlocked, waysFor, makeItem, spend, combine, combineOptions, nearRecipes, jugaadScore, jugaadTitle,
 } from "../shared/jugaad.js";
 import { BankWorld } from "./three/bank.js";
 import { Boss } from "./three/boss.js";
@@ -1227,6 +1227,7 @@ export class JugaadGame {
     this.noise(at.x, at.y, c.noise);
     const found = [];
     const left = [];
+    const before = new Set(this.inventory.map((it) => it.uid));
     for (const id of this.contents[c.id]) {
       if (id === CODE_NOTE) {
         this.knowsCode = true;
@@ -1248,7 +1249,7 @@ export class JugaadGame {
     }
     if (found.length) {
       this.sound.pickup();
-      if (c.id !== "boss-keys") this.flash(`Found ${found.join(", ")}.${left.length ? " Your hands are full — drop something (Q) for the rest." : ""}`, 5000);
+      if (c.id !== "boss-keys") this.flash(`Found ${found.join(", ")}.${left.length ? " Your hands are full — drop something (Q) for the rest." : ""}${this.foundCombineHint(before)}`, 6000);
       // After you've read what you found, not over it.
       if (!this.hintsShown.has("bag")) {
         this.hintsShown.add("bag");
@@ -1436,9 +1437,14 @@ export class JugaadGame {
   selectSlot(i) {
     if (this.slap || this.runOver) return;
     if (i < 0 || i >= this.inventory.length) return;
+    const changed = this.selected !== i;
     this.selected = i;
     this.sound.select();
     this.renderInventory();
+    // Phones and narrow windows don't show the item's description, so a
+    // combine hint is said out loud instead.
+    const hint = this.combineHint(this.inventory[i]);
+    if (changed && hint && getComputedStyle(this.el.itemNote).display === "none") this.flash(`${ITEMS[this.inventory[i].id].name}: ${hint}`, 5000, 0);
   }
 
   useItem() {
@@ -1810,7 +1816,39 @@ export class JugaadGame {
       el.append(slot);
     }
     const selected = this.inventory[this.selected];
-    this.el.itemNote.textContent = selected ? this.forTouch(ITEMS[selected.id].note) : "";
+    const hint = selected ? this.combineHint(selected) : "";
+    this.el.itemNote.textContent = selected ? this.forTouch(`${ITEMS[selected.id].note}${hint ? ` ${hint}` : ""}`) : "";
+    // On a phone the Combine button lights up when something in the bag goes
+    // together.
+    this.el.combineButton?.classList.toggle("available", this.inventory.some((it) => combineOptions(this.inventory, it.uid).some((o) => o.ready)));
+  }
+
+  // For the "Found …" message: if something just found goes with something
+  // (now) in your bag, say so; otherwise what it could go with.
+  foundCombineHint(before) {
+    const fresh = this.inventory.filter((it) => !before.has(it.uid));
+    let partial = "";
+    for (const item of fresh) {
+      const options = combineOptions(this.inventory, item.uid);
+      const ready = options.find((o) => o.ready);
+      if (ready) {
+        return ` You've got ${withArticle(lowerName(item.id))} and ${withArticle(lowerName(ready.partner))} — press G to put them together: a ${ITEMS[ready.recipe.out].name.toLowerCase()} (${ready.recipe.for})!`;
+      }
+      if (options.length && !partial) partial = ` Find ${withArticle(lowerName(options[0].partner))} to go with it: together they make a ${ITEMS[options[0].recipe.out].name.toLowerCase()}.`;
+    }
+    return partial;
+  }
+
+  // What the item in your hand combines with: "Press G to put it together
+  // with your paperclip → …" when the other half is in your bag, otherwise what
+  // to look for.
+  combineHint(item) {
+    const options = combineOptions(this.inventory, item.uid);
+    const ready = options.find((o) => o.ready);
+    const made = (o) => `${ITEMS[o.recipe.out].name} (${o.recipe.for})`;
+    if (ready) return `Press G to put it together with your ${lowerName(ready.partner)} → ${made(ready)}.`;
+    if (!options.length) return "";
+    return `Combine it with ${options.map((o) => `${withArticle(lowerName(o.partner))} → ${made(o)}`).join(", or ")}.`;
   }
 
   renderDoors() {
@@ -1903,7 +1941,8 @@ export class JugaadGame {
       .replace(/drop something \(Q\)/gi, "drop something")
       .replace(/Pull them shut \(E\)/g, "Pull them shut (Use)")
       .replace(/1–5 picks one; G combines two things into a better tool; F uses it\./, "Tap a slot to pick it; Combine makes a better tool out of two; Item uses it.")
-      .replace(/press F/gi, "tap Item")
+      .replace(/press F/gi, (m) => (m[0] === "P" ? "Tap Item" : "tap Item"))
+      .replace(/press G/gi, (m) => (m[0] === "P" ? "Tap Combine" : "tap Combine"))
       .replace(/press ([1-5])\b/gi, "tap slot $1")
       .replace(/\bhold E\b/gi, "hold Use")
       .replace(/\bPress E\b/g, "Tap Use")

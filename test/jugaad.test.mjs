@@ -5,7 +5,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
-  ITEMS, RECIPES, DOORS, CONTAINERS, placeItems, waysFor, combine, spend, makeItem, lockedDoors, doorUnlocked, jugaadScore, jugaadTitle,
+  ITEMS, RECIPES, DOORS, CONTAINERS, placeItems, waysFor, combine, spend, makeItem, lockedDoors, doorUnlocked, jugaadScore, jugaadTitle, combineOptions,
 } from "../shared/jugaad.js";
 
 function seeded(seed) {
@@ -114,4 +114,14 @@ test("a shift that ends inside is titled for how it ended", () => {
   assert.equal(jugaadTitle(0, false, "slaps"), "Paanch thappad club");
   assert.equal(jugaadTitle(900, false, "eleven"), "Almost Home");
   assert.notEqual(jugaadTitle(0, true), "Record room ka naya karmchari");
+});
+
+test("an item knows what it combines with, and whether the partner is in the bag", () => {
+  const pin = makeItem("hairpin");
+  const clip = makeItem("paperclip");
+  assert.deepEqual(combineOptions([pin], pin.uid).map((o) => [o.partner, o.ready]), [["paperclip", false]]);
+  assert.deepEqual(combineOptions([pin, clip], pin.uid).map((o) => [o.partner, o.ready]), [["paperclip", true]]);
+  // A paperclip goes with a hairpin or a safety pin.
+  assert.deepEqual(combineOptions([clip], clip.uid).map((o) => o.partner).sort(), ["hairpin", "safety_pin"]);
+  assert.deepEqual(combineOptions([makeItem("phone")], undefined), []);
 });

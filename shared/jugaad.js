@@ -30,15 +30,15 @@ export const ITEMS = {
   butter_knife: { name: "Butter knife", note: "From the pantry. Forces a latch — loudly.", tags: ["blade"] },
   umbrella: { name: "Umbrella", note: "The handle is a perfect hook for a high bolt.", tags: ["hook"] },
   broom: { name: "Phool jhaadu", note: "Long enough to knock a tower bolt across.", tags: ["hook"] },
-  hairpin: { name: "Hairpin", note: "Bend it into a pick. Needs a tension wrench — a paperclip?", tags: ["pin"] },
+  hairpin: { name: "Hairpin", note: "Bent the right way, it picks a padlock — with something to hold tension.", tags: ["pin"] },
   safety_pin: { name: "Safety pin", note: "A worse pick than a hairpin, but a pick.", tags: ["pin"] },
   paperclip: { name: "Paperclip", note: "Straightened, it holds tension on a lock.", tags: ["clip"] },
-  scissors: { name: "Scissors", note: "Could cut a shim out of something thin and metal.", tags: ["cutter"] },
-  can: { name: "Empty Toofan Cola can", note: "Thin aluminium. Cut a strip and it is a padlock shim.", tags: ["tin"] },
+  scissors: { name: "Scissors", note: "Sharp enough for thin metal.", tags: ["cutter"] },
+  can: { name: "Empty Toofan Cola can", note: "Thin aluminium, crushed at one end.", tags: ["tin"] },
   coconut_oil: { name: "Nariyal tel bottle", note: "Somebody's hair oil. Enough to oil two tracks.", tags: ["oil"], uses: 2 },
   vaseline: { name: "Petroleum jelly tin", note: "For winter lips. Greases one track quiet.", tags: ["oil"], uses: 1 },
   achaar: { name: "Tiffin of achaar", note: "Mango pickle, swimming in mustard oil. It will do.", tags: ["oil"], uses: 1 },
-  rubber_band: { name: "Rubber band", note: "Stretch it over a ruler and you have a gulel.", tags: ["band"] },
+  rubber_band: { name: "Rubber band", note: "Thick, office-issue. Snaps hard.", tags: ["band"] },
   drawer_key: { name: "Small key", note: "Too small for a door. A desk drawer, maybe.", tags: ["drawerkey"] },
   gate_key: { name: "Spare gate key", note: "Labelled 'GRILL' in marker.", tags: ["gatekey"] },
   key_bunch: { name: "Sir's key bunch", note: "Every key in the branch. He will notice.", tags: ["masterkey"] },
@@ -64,11 +64,12 @@ export const JUNK = [
 ];
 
 // Two things in, one thing out. `keep` survives the combining.
+// `for` is what the result is good for, in a few words, for the hints.
 export const RECIPES = [
-  { a: "hairpin", b: "paperclip", out: "pick_set" },
-  { a: "safety_pin", b: "paperclip", out: "crude_pick" },
-  { a: "can", b: "scissors", out: "shim", keep: ["scissors"] },
-  { a: "rubber_band", b: "steel_ruler", out: "gulel" },
+  { a: "hairpin", b: "paperclip", out: "pick_set", for: "picks the padlocks, quietly" },
+  { a: "safety_pin", b: "paperclip", out: "crude_pick", for: "picks a padlock or two" },
+  { a: "can", b: "scissors", out: "shim", keep: ["scissors"], for: "slips a padlock open" },
+  { a: "rubber_band", b: "steel_ruler", out: "gulel", for: "flicks a decoy noise across the room" },
 ];
 
 // ----------------------------------------------------------------- containers
@@ -363,6 +364,17 @@ export function combine(inventory, selectedUid = null) {
   const next = inventory.filter((item) => !used.includes(item.uid));
   next.push(made);
   return { inventory: next, made, recipe };
+}
+
+// What an item could be combined with: every recipe it is part of, the
+// partner it needs, and whether that partner is already in the bag.
+export function combineOptions(inventory, uid) {
+  const item = inventory.find((i) => i.uid === uid);
+  if (!item) return [];
+  return RECIPES.filter((r) => r.a === item.id || r.b === item.id).map((recipe) => {
+    const partner = recipe.a === item.id ? recipe.b : recipe.a;
+    return { recipe, partner, ready: inventory.some((i) => i.id === partner && i.uid !== uid) };
+  });
 }
 
 // Recipes the bag is one item short of, for hints.
